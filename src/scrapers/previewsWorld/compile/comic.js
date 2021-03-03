@@ -1,6 +1,6 @@
 const mongoose = require("mongoose")
-const logger = require("../../../utils/logger.js")
 const getCreatorsFromNodes = require("./creator.js")
+const { infoLogger } = require("../../../utils/logger.js")
 const comicModel = require("../../../models/comic.js")
 const toProperCasing = require("../../../utils/toProperCasing.js")
 const getMonthFromAbbreviation = require("../../../utils/getMonth.js")
@@ -91,7 +91,7 @@ async function getCompiledComic(comic, format) {
 
     compiledComic.diamondID = comic.diamondID
     compiledComic.publisherName = comic.publisherName
-    compiledComic.publisherID = null // TODO publisher ID
+    compiledComic.publisherID = null
     compiledComic.releaseDate = comic.releaseDate
     compiledComic.coverPrice = comic.coverPrice
     compiledComic.currency = comic.currency
@@ -119,10 +119,10 @@ async function getCompiledComic(comic, format) {
     compiledComic.creators = getCreatorsFromNodes(comic.creators)
 
     if (!comic.diamondID || comic.diamondID.length < 5)
-        logger.error(`! Cannot set the solicitation date`)
+        infoLogger.error(`! Cannot set the solicitation date`)
     else compiledComic.solicitationDate = getSolicitDateFromDiamondID(comic.diamondID)
 
-    if (!comic.title) logger.error(`! The comic title was not found`)
+    if (!comic.title) infoLogger.error(`! The comic title was not found`)
     else {
         compiledComic.title = comic.title
         compiledComic.printingNumber = getPrintingNumberFromTitle(comic.title)

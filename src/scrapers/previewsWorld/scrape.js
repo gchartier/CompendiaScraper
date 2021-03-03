@@ -1,9 +1,9 @@
 const $ = require("cheerio")
 const axios = require("axios")
-const getCompiledComic = require("./compile/comic.js")
 const sleep = require("../../utils/sleep")
+const { infoLogger } = require("../../utils/logger.js")
+const getCompiledComic = require("./compile/comic.js")
 const toProperCasing = require("../../utils/toProperCasing")
-const logger = require("../../utils/logger.js")
 
 const SLEEP_SECONDS = 3
 
@@ -46,7 +46,7 @@ async function getScrapedRelease(releaseLink, releaseFormat) {
     const baseURL = "https://www.previewsworld.com"
     const url = `${baseURL}${releaseLink}`
 
-    logger.info(`# Getting new release from ${url}`)
+    infoLogger.info(`# Getting new release from ${url}`)
     await sleep(SLEEP_SECONDS)
     const { data: newReleaseResponse } = await axios.get(url)
     const scrapedRelease = {
@@ -74,16 +74,16 @@ async function getScrapedRelease(releaseLink, releaseFormat) {
 }
 
 async function getScrapedPreviewsWorldReleases() {
-    logger.info(`# Started retrieving Previews World new releases`)
+    infoLogger.info(`# Started retrieving Previews World new releases`)
 
     const releases = []
     const scrapedLinksAndFormats = await getScrapedReleaseLinksAndFormats()
     for (const [index, { link, format }] of scrapedLinksAndFormats.entries()) {
         releases.push(await getScrapedRelease(link, format))
-        logger.info(`# End of New Release ${index + 1} from ${link}`)
+        infoLogger.info(`# End of New Release ${index + 1} from ${link}`)
     }
 
-    logger.info(`# Finished retrieving Previews World new releases`)
+    infoLogger.info(`# Finished retrieving Previews World new releases`)
     return releases
 }
 

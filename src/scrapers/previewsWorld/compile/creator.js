@@ -1,3 +1,5 @@
+const { infoLogger } = require("../../../utils/logger.js")
+
 function getCreatorsFromType(creator) {
     const creatorTypes = [
         { name: "Writer", matches: (node) => node.match(/\(W\)/i), value: [1] },
@@ -70,7 +72,7 @@ function isLastNode(nodeList, index) {
 }
 
 function getCreatorsFromNodes(nodes) {
-    if (!nodes) logger.error(`! No comic creator nodes`)
+    if (!nodes) infoLogger.error(`! No comic creator nodes`)
     else {
         const creators = []
         const creator = { name: "", type: 0 }
