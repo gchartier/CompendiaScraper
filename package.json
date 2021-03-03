@@ -1,0 +1,27 @@
+{
+    "name": "compendia-scraper",
+    "version": "1.0.0",
+    "description": "Compendia new comic releases web scraper",
+    "main": "src/scrapers/index.js",
+    "scripts": {
+        "start": "node src/scrapers/index.js",
+        "start-watch": "nodemon src/scrapers/index.js",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "Gabriel Chartier",
+    "license": "ISC",
+    "dependencies": {
+        "axios": "^0.21.1",
+        "cheerio": "^1.0.0-rc.3",
+        "dotenv": "^8.2.0",
+        "mongodb": "^3.2.4",
+        "mongoose": "^5.5.8",
+        "winston": "^3.3.3",
+        "winston-daily-rotate-file": "^3.9.0"
+    },
+    "devDependencies": {
+        "eslint": "^7.21.0",
+        "nodemon": "^1.19.0"
+    }
+}
