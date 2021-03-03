@@ -12,7 +12,7 @@ function connectCallback(error, client) {
     }
 }
 
-async function dbConnect() {
+async function connect() {
     const connectionString = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_SERVER}/${process.env.DB}`
     const options = {
         useNewUrlParser: true,
@@ -28,4 +28,4 @@ async function dbConnect() {
     }
 }
 
-module.exports = dbConnect
+module.exports = connect

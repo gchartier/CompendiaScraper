@@ -1,3 +1,4 @@
+const mongoose = require("mongoose")
 const logger = require("../utils/logger.js")
 const { creatorModel } = require("../models/creator.js")
 
@@ -31,4 +32,17 @@ async function insertOrUpdateCreator(creatorDoc, comicID, comicTitle) {
     return creatorQuery ? creatorQuery._id : creatorDoc._id
 }
 
-module.exports = insertOrUpdateCreator
+async function insertOrUpdateCreators(comicDoc) {
+    for (const creator of comicDoc.creators) {
+        const newCreatorModel = new creatorModel({
+            _id: new mongoose.Types.ObjectId(),
+            name: creator.name,
+            type: creator.type,
+            entries: [comicDoc._id],
+        })
+
+        creator._id = await insertOrUpdateCreator(newCreatorModel, comicDoc._id, comicDoc.title)
+    }
+}
+
+module.exports = insertOrUpdateCreators
