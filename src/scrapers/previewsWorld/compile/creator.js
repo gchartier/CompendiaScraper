@@ -1,36 +1,42 @@
 const { infoLogger } = require("../../../utils/logger.js")
 
-function getCreatorsFromType(creator) {
+function getCreatorTypesFromScrapedCreator(scrapedCreator, existingTypes) {
     const creatorTypes = [
-        { name: "Writer", matches: (node) => node.match(/\(W\)/i), value: [1] },
-        { name: "Artist", matches: (node) => node.match(/\(A\)/i), value: [2] },
-        { name: "Cover Artist", matches: (node) => node.match(/\(CA\)/i), value: [3] },
+        { name: "Writer", matches: (node) => node.match(/\(W\)/i), values: ["W"] },
+        { name: "Artist", matches: (node) => node.match(/\(A\)/i), values: ["A"] },
+        { name: "Cover Artist", matches: (node) => node.match(/\(CA\)/i), values: ["CA"] },
         {
             name: "Artist / Cover Artist",
             matches: (node) => node.match(/\(A\/CA\)/i),
-            value: [2, 3],
+            values: ["A", "CA"],
         },
     ]
 
-    const creators = []
+    const types = []
     creatorTypes.forEach((type) => {
-        if (type.matches(creator.type)) {
-            type.value.forEach((value) => {
-                creators.push({
-                    name: creator.name.substring(1),
-                    type: value,
-                })
+        if (type.matches(scrapedCreator.type))
+            type.values.forEach((value) => {
+                if (!existingTypes.includes(value)) types.push(value)
             })
-        }
     })
 
-    return creators
+    return types
 }
 
-function appendCreatorToList(creator, creators) {
-    creator.name = creator.name.replace(",", "")
-    creators.push.apply(creators, getCreatorsFromType(creator))
-    creator.name = ""
+function addScrapedCreatorToList(scrapedCreator, creators) {
+    scrapedCreator.name = scrapedCreator.name.replace(",", "").substring(1)
+    const index = creators.findIndex((c) => c.name === scrapedCreator.name)
+    if (index)
+        creators[index].types.push.apply(
+            creators[index].types,
+            getCreatorTypesFromScrapedCreator(scrapedCreator, creators[index].types)
+        )
+    else
+        creators.push({
+            name: scrapedCreator.name,
+            types: getCreatorTypesFromScrapedCreator(scrapedCreator, []),
+        })
+    scrapedCreator.name = ""
 }
 
 function getIndexOfFirstMatchingCreator(creators, creatorToMatch) {
@@ -75,18 +81,18 @@ function getCreatorsFromNodes(nodes) {
     if (!nodes) infoLogger.error(`! No comic creator nodes`)
     else {
         const creators = []
-        const creator = { name: "", type: 0 }
+        const scrapedCreator = { name: "", types: [] }
 
         nodes.forEach((node, index, nodes) => {
             if (isNameNode(node)) {
-                creator.name = creator.name.concat(" " + node)
-                if (isEndOfNameNode(node)) appendCreatorToList(creator, creators)
+                scrapedCreator.name = scrapedCreator.name.concat(" " + node)
+                if (isEndOfNameNode(node)) addScrapedCreatorToList(scrapedCreator, creators)
             } else if (isCreatorTypeNode(node)) {
-                if (creator.name) appendCreatorToList(creator, creators)
-                creator.type = node
+                if (scrapedCreator.name) addScrapedCreatorToList(scrapedCreator, creators)
+                scrapedCreator.type = node
             }
 
-            if (isLastNode(nodes, index)) appendCreatorToList(creator, creators)
+            if (isLastNode(nodes, index)) addScrapedCreatorToList(scrapedCreator, creators)
         })
 
         return getFilteredUniqueCreators(creators)

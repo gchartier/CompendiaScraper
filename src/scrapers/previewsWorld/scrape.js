@@ -51,13 +51,14 @@ async function getScrapedRelease(releaseLink, releaseFormat) {
     const { data: newReleaseResponse } = await axios.get(url)
     const scrapedRelease = {
         title: " " + $(".Title", newReleaseResponse).text() + " ",
-        seriesName: await getScrapedSeriesName(
-            baseURL + $(".ViewSeriesItemsLink", newReleaseResponse).attr("href")
-        ),
-        publisherName: toProperCasing($(".Publisher", newReleaseResponse).text()),
+        series: {
+            name: await getScrapedSeriesName(
+                baseURL + $(".ViewSeriesItemsLink", newReleaseResponse).attr("href")
+            ),
+        },
+        publisher: { name: toProperCasing($(".Publisher", newReleaseResponse).text()) },
         releaseDate: $(".ReleaseDate", newReleaseResponse).text().slice(10),
-        coverPrice: $(".SRP", newReleaseResponse).text().slice(6),
-        currency: $(".SRP", newReleaseResponse).text().slice(5, 6),
+        coverPrice: $(".SRP", newReleaseResponse).text().slice(5),
         cover: baseURL + $(".mainContentImage .ImageContainer", newReleaseResponse).attr("href"),
         description: $("div.Text", newReleaseResponse)
             .first()
@@ -68,9 +69,10 @@ async function getScrapedRelease(releaseLink, releaseFormat) {
             .trim(),
         creators: $(".Creators", newReleaseResponse).text().replace(/\s+/g, " ").trim().split(" "),
         diamondID: $(".ItemCode", newReleaseResponse).text(),
+        format: releaseFormat === 1 ? "Comic" : "",
     }
 
-    return await getCompiledComic(scrapedRelease, $(releaseFormat).attr("dmd-cat"))
+    return await getCompiledComic(scrapedRelease)
 }
 
 async function getScrapedPreviewsWorldReleases() {

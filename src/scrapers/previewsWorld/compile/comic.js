@@ -1,7 +1,7 @@
 const mongoose = require("mongoose")
 const getCreatorsFromNodes = require("./creator.js")
-const { infoLogger } = require("../../../utils/logger.js")
 const comicModel = require("../../../models/comic.js")
+const { infoLogger } = require("../../../utils/logger.js")
 const toProperCasing = require("../../../utils/toProperCasing.js")
 const getMonthFromAbbreviation = require("../../../utils/getMonth.js")
 
@@ -11,44 +11,46 @@ function getSolicitDateFromDiamondID(diamondID) {
 }
 
 function getPrintingNumberFromTitle(title) {
-    const titleArray = title.split(" ")
+    const titleParts = title.split(" ")
     let printingNumber = "1"
-    for (let i = 0; i < titleArray.length; i++)
-        if (titleArray[i].match(/PTG/i))
-            if (i > 0) {
-                const printingNums = titleArray[i - 1].match(/\d+/g).map(Number)
-                for (let i = 0; i < printingNums.length; i++)
-                    printingNumber.concat(printingNums[i].toString)
+    titleParts.forEach((part, index) => {
+        if (part.match(/PTG/i))
+            if (index > 0) {
+                const printingNums = titleParts[index - 1].match(/\d+/g).map(Number)
+                printingNums.forEach((num) => printingNumber.concat(num.toString))
             }
+    })
 
     return printingNumber
 }
 
 function getFormatFromTitle(title) {
-    let format
-    if (title.match(/ TP /i)) format = 2
-    else if (title.match(/ HC /i)) format = 3
-    else format = 1
+    let format = ""
+
+    if (title.match(/ GN /i)) format = "Graphic Novel"
+    else if (title.match(/ OMNIBUS HC /i)) format = "Omnibus Hardcover"
+    else if (title.match(/ OMNIBUS /i)) format = "Omnibus"
+    else if (title.match(/ TP /i)) format = "Trade Paperback"
+    else if (title.match(/ HC /i) || title.match(/ HC Book /i)) format = "Hardcover"
+    else format = "Comic"
 
     return format
-}
-
-function getCollectionTypeFromTitle(title) {
-    let collectionType
-    if (title.match(/ VOL /i)) collectionType = 1
-    else if (title.match(/ BOOK /i)) collectionType = 2
-    else if (title.match(/ OMNIBUS /i)) collectionType = 3
-    else if (title.match(/ GN /)) collectionType = 4
-    else if (title.match(/ PART /i)) collectionType = 5
-    else collectionType = 0
-    return collectionType
 }
 
 function getMiniSeriesLimitFromTitle(title) {
     return title.match(/ \(OF \d+\) /i)[1].substring(5, title.match(/ \(OF \d+\) /i).length)
 }
 
-function getItemNumberFromTitle(title) {
+function getItemNumberFromTitle(title, format) {
+    //TODO get item numbers for other types
+    let itemNumber = ""
+
+    if (format === "Comic") {
+        if (title.match(/ #\d+ /)) {
+            compiledComic.itemNumber = getItemNumberFromTitle(comic.title)
+        } else compiledComic.itemNumber = "#1"
+    }
+
     const itemNumber = title.match(/ #\d+ /).toString()
     return itemNumber.substring(2, itemNumber.length - 1)
 }
@@ -76,7 +78,7 @@ function getCleanedTitle(title) {
     cleanedTitle = cleanedTitle.replace(/ O\/T /i, " of the ")
     cleanedTitle = cleanedTitle.replace(/ ORIG /i, " Original ")
     cleanedTitle = cleanedTitle.replace(/ YRS /i, " Years ")
-    cleanedTitle = cleanedTitle.replace(/ WR /i, " ")
+    //cleanedTitle = cleanedTitle.replace(/ WR /i, " ")
     cleanedTitle = cleanedTitle.replace(/ \(NEW PTG\) /i, " New Printing ")
     cleanedTitle = cleanedTitle.replace(/ TNG /i, " The Next Generation ")
     cleanedTitle = cleanedTitle.replace(/ SGN /i, " Signature ")
@@ -86,76 +88,38 @@ function getCleanedTitle(title) {
     return cleanedTitle
 }
 
-async function getCompiledComic(comic, format) {
+async function getCompiledComic(comic) {
     const compiledComic = new comicModel({ _id: new mongoose.Types.ObjectId() })
 
     compiledComic.diamondID = comic.diamondID
-    compiledComic.publisherName = comic.publisherName
-    compiledComic.publisherID = null
+    compiledComic.publisher = { id: null, name: comic.publisher.name }
+    compiledComic.series = { id: null, name: comic.series.name }
     compiledComic.releaseDate = comic.releaseDate
     compiledComic.coverPrice = comic.coverPrice
-    compiledComic.currency = comic.currency
     compiledComic.cover = comic.cover
     compiledComic.description = comic.description
-    compiledComic.imprintName = ""
-    compiledComic.imprintID = null
-    compiledComic.pageCount = 0
-    compiledComic.synopsis = ""
-    compiledComic.arc = ""
-    compiledComic.arcID = null
-    compiledComic.characters = null
-    compiledComic.collectedIn = null
-    compiledComic.age = 4
-    compiledComic.barcode = ""
-    compiledComic.totalWant = 0
-    compiledComic.totalFavorited = 0
-    compiledComic.totalOwned = 0
-    compiledComic.totalRead = 0
-    compiledComic.avgRating = 0
-    compiledComic.totalRatings = 0
-    compiledComic.totalReviews = 0
-    compiledComic.seriesName = comic.seriesName
-    compiledComic.seriesID = null
     compiledComic.creators = getCreatorsFromNodes(comic.creators)
-
+    compiledComic.format = comic.format
     if (!comic.diamondID || comic.diamondID.length < 5)
         infoLogger.error(`! Cannot set the solicitation date`)
     else compiledComic.solicitationDate = getSolicitDateFromDiamondID(comic.diamondID)
-
     if (!comic.title) infoLogger.error(`! The comic title was not found`)
     else {
         compiledComic.title = comic.title
         compiledComic.printingNumber = getPrintingNumberFromTitle(comic.title)
-        // TODO variantOf and versionOf
-        compiledComic.variantOf = null
         compiledComic.versionOf = null
-        compiledComic.variant = "A"
-
-        if (compiledComic.title.match(/ CVR [A-Z]/i) !== null)
-            compiledComic.variant = compiledComic.title.match(/ CVR [A-Z]/i)[0].substring(5)
-
-        compiledComic.isMature = compiledComic.title.match(/ \(MR\) /i) !== null
-        compiledComic.isMiniSeries = compiledComic.title.match(/ \(OF \d+\) /i) !== null
-        compiledComic.isReprint =
-            compiledComic.title.match(/ \(NEW PTG\) /i) !== null ||
-            compiledComic.title.match(/ NEW PTG /i) !== null
-        compiledComic.isOneShot = compiledComic.title.match(/ ONE SHOT /i) !== null
-
+        compiledComic.variantType = null
+        if (compiledComic.title.match(/ CVR [A-Z]/i)) compiledComic.variantType = "cvr"
+        if (compiledComic.title.match(/ \(NEW PTG\) /i) || compiledComic.title.match(/ NEW PTG /i))
+            compiledComic.variantType = "spr"
+        compiledComic.ageRating = compiledComic.title.match(/ \(MR\) /i) ? "MA" : ""
+        compiledComic.isMiniSeries = compiledComic.title.match(/ \(OF \d+\) /i)
         if (comic.isMiniSeries)
             compiledComic.miniSeriesLimit = getMiniSeriesLimitFromTitle(comic.title)
         else compiledComic.miniSeriesLimit = 0
-
-        if (format === 1) compiledComic.format = 1
-        else compiledComic.format = getFormatFromTitle(comic.title)
-
-        compiledComic.collectionType = getCollectionTypeFromTitle(comic.title)
-
-        // TODO: include this stuff -> VOL, HC, TP VOL 01, TP BOOK 01, HC BOOK 03, TP PART 01, HC VOL 04, OMNIBUS HC VOL 04, GN, GN VOL 03,
-        if (compiledComic.format === 1)
-            if (compiledComic.title.match(/ #\d+ /) !== null) {
-                compiledComic.itemNumber = getItemNumberFromTitle(comic.title)
-            } else compiledComic.itemNumber = 1
-
+        compiledComic.isOneShot = compiledComic.title.match(/ ONE SHOT /i)
+        if (compiledComic.format !== "Comic") compiledComic.format = getFormatFromTitle(comic.title)
+        compiledComic.itemNumber = getItemNumberFromTitle(comic.title, comic.format)
         compiledComic.title = getCleanedTitle(comic.title)
     }
 
