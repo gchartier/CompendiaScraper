@@ -1,6 +1,5 @@
-const mongoose = require("mongoose")
+const { format } = require("date-fns")
 const getCreatorsFromNodes = require("./creator.js")
-const comicModel = require("../../../models/comic.js")
 const { infoLogger } = require("../../../utils/logger.js")
 const toProperCasing = require("../../../utils/toProperCasing.js")
 const getMonthFromAbbreviation = require("../../../utils/getMonth.js")
@@ -11,27 +10,32 @@ function getSolicitDateFromDiamondID(diamondID) {
 }
 
 function getPrintingNumberFromTitle(title) {
-    const titleParts = title.split(" ")
-    let printingNumber = "1"
-    titleParts.forEach((part, index) => {
-        if (part.match(/PTG/i))
-            if (index > 0) {
-                const printingNums = titleParts[index - 1].match(/\d+/g).map(Number)
-                printingNums.forEach((num) => printingNumber.concat(num.toString))
-            }
-    })
+    const printingNums = []
+    if (title.match(/ NEW PTG /i) === null && title.match(/\d+\w+ PTG /i)) {
+        const titleParts = title.split(" ")
+        titleParts.forEach((part, index) => {
+            if (index > 0 && part.match(/PTG/i))
+                printingNums.push(titleParts[index - 1].match(/\d+/g))
+        })
+    }
+    const printingNum = printingNums.reduce((acc, curr) => acc + curr, "")
 
-    return printingNumber
+    return printingNum !== "" ? parseInt(printingNum) : 1
+}
+
+function getFormattedReleaseDate(dateString) {
+    return format(new Date(dateString), "yyyy-MM-dd")
 }
 
 function getFormatFromTitle(title) {
     let format = ""
 
-    if (title.match(/ GN /i)) format = "Graphic Novel"
+    if (title.match(/ GN HC /i)) format = "Graphic Novel Hardcover"
+    else if (title.match(/ GN /i)) format = "Graphic Novel"
     else if (title.match(/ OMNIBUS HC /i)) format = "Omnibus Hardcover"
     else if (title.match(/ OMNIBUS /i)) format = "Omnibus"
     else if (title.match(/ TP /i)) format = "Trade Paperback"
-    else if (title.match(/ HC /i) || title.match(/ HC Book /i)) format = "Hardcover"
+    else if (title.match(/ HC /i)) format = "Hardcover"
     else format = "Comic"
 
     return format
@@ -42,46 +46,190 @@ function getMiniSeriesLimitFromTitle(title) {
 }
 
 function getItemNumberFromTitle(title, format) {
-    //TODO get item numbers for other types
-    let itemNumber = ""
+    const numberMatchesByFormat = [
+        {
+            format: "Comic",
+            numberMatches: [
+                {
+                    name: "Standard Issue",
+                    isMatchOf: (title) => title.match(/ #\d+ /) !== null,
+                    getNumber: (title) => {
+                        const number = title.match(/ #\d+ /).toString()
+                        return number.substring(1, number.length - 1)
+                    },
+                },
+            ],
+        },
+        {
+            format: "Trade Paperback",
+            numberMatches: [
+                {
+                    name: "Volume",
+                    isMatchOf: (title) => title.match(/ TP VOL \d+ /) !== null,
+                    getNumber: (title) => {
+                        const number = title.match(/ TP VOL \d+ /).toString()
+                        return `#${number.substring(8, number.length - 1)}`
+                    },
+                },
+                {
+                    name: "Book",
+                    isMatchOf: (title) => title.match(/ TP BOOK \d+ /) !== null,
+                    getNumber: (title) => {
+                        const number = title.match(/ TP BOOK \d+ /).toString()
+                        return `#${number.substring(9, number.length - 1)}`
+                    },
+                },
+                {
+                    name: "Part",
+                    isMatchOf: (title) => title.match(/ TP PART \d+ /) !== null,
+                    getNumber: (title) => {
+                        const number = title.match(/ TP PART \d+ /).toString()
+                        return `#${number.substring(9, number.length - 1)}`
+                    },
+                },
+            ],
+        },
+        {
+            format: "Hardcover",
+            numberMatches: [
+                {
+                    name: "Volume",
+                    isMatchOf: (title) => title.match(/ HC VOL \d+ /) !== null,
+                    getNumber: (title) => {
+                        const number = title.match(/ HC VOL \d+ /).toString()
+                        return `#${number.substring(8, number.length - 1)}`
+                    },
+                },
+                {
+                    name: "Book",
+                    isMatchOf: (title) => title.match(/ HC BOOK \d+ /) !== null,
+                    getNumber: (title) => {
+                        const number = title.match(/ HC BOOK \d+ /).toString()
+                        return `#${number.substring(9, number.length - 1)}`
+                    },
+                },
+                {
+                    name: "Part",
+                    isMatchOf: (title) => title.match(/ HC PART \d+ /) !== null,
+                    getNumber: (title) => {
+                        const number = title.match(/ HC PART \d+ /).toString()
+                        return `#${number.substring(9, number.length - 1)}`
+                    },
+                },
+            ],
+        },
+        {
+            format: "Graphic Novel",
+            numberMatches: [
+                {
+                    name: "Trade Paperback",
+                    isMatchOf: (title) => title.match(/ GN TP \d+ /) !== null,
+                    getNumber: (title) => {
+                        const number = title.match(/ GN TP \d+ /).toString()
+                        return `#${number.substring(7, number.length - 1)}`
+                    },
+                },
+                {
+                    name: "Volume",
+                    isMatchOf: (title) => title.match(/ GN VOL \d+ /) !== null,
+                    getNumber: (title) => {
+                        const number = title.match(/ GN VOL \d+ /).toString()
+                        return `#${number.substring(8, number.length - 1)}`
+                    },
+                },
+            ],
+        },
+        {
+            format: "Graphic Novel Hardcover",
+            numberMatches: [
+                {
+                    name: "Hardcover",
+                    isMatchOf: (title) => title.match(/ GN HC \d+ /) !== null,
+                    getNumber: (title) => {
+                        const number = title.match(/ GN HC \d+ /).toString()
+                        return `#${number.substring(7, number.length - 1)}`
+                    },
+                },
+            ],
+        },
+        {
+            format: "Omnibus",
+            numberMatches: [
+                {
+                    name: "Volume",
+                    isMatchOf: (title) => title.match(/ OMNIBUS VOL \d+ /) !== null,
+                    getNumber: (title) => {
+                        const number = title.match(/ OMNIBUS VOL \d+ /).toString()
+                        return `#${number.substring(13, number.length - 1)}`
+                    },
+                },
+            ],
+        },
+        {
+            format: "Omnibus Hardcover",
+            numberMatches: [
+                {
+                    name: "Volume",
+                    isMatchOf: (title) => title.match(/ OMNIBUS HC VOL \d+ /) !== null,
+                    getNumber: (title) => {
+                        const number = title.match(/ OMNIBUS HC VOL \d+ /).toString()
+                        return `#${number.substring(16, number.length - 1)}`
+                    },
+                },
+            ],
+        },
+    ]
 
-    if (format === "Comic") {
-        if (title.match(/ #\d+ /)) {
-            compiledComic.itemNumber = getItemNumberFromTitle(comic.title)
-        } else compiledComic.itemNumber = "#1"
-    }
+    const itemNumbers = []
+    numberMatchesByFormat.forEach((matchesByFormat) => {
+        if (format === matchesByFormat.format) {
+            matchesByFormat.numberMatches.forEach((numberMatch) => {
+                if (numberMatch.isMatchOf(title)) itemNumbers.push(numberMatch.getNumber(title))
+            })
+        }
+    })
 
-    const itemNumber = title.match(/ #\d+ /).toString()
-    return itemNumber.substring(2, itemNumber.length - 1)
+    if (itemNumbers.length === 0) {
+        infoLogger.warn("! Item number not found from title. Setting as #1")
+        itemNumbers.push("#1")
+    } else if (itemNumbers.length > 1)
+        infoLogger.error("! More than one item number match was found from the title.")
+
+    return itemNumbers[0]
 }
 
 function getCleanedTitle(title) {
-    let cleanedTitle = title
+    const itemsToClean = [
+        { pattern: / #\d+ /, replacement: "" },
+        { pattern: / \(MR\) /i, replacement: "" },
+        { pattern: / \( $/, replacement: "" },
+        { pattern: / \(OF \d+\) /, replacement: "" },
+        { pattern: / \(USE [A-Z]{3}\d+\) /i, replacement: "" },
+        { pattern: / \(C /i, replacement: "" },
+        { pattern: / \(RES\) /i, replacement: "" },
+        { pattern: / VOL /i, replacement: " Vol. " },
+        { pattern: / CVR /i, replacement: " Cover " },
+        { pattern: / VAR /i, replacement: " Variant " },
+        { pattern: / LMT /i, replacement: " Limited " },
+        { pattern: / LT /i, replacement: " Limited " },
+        { pattern: / LTD /i, replacement: " Limited " },
+        { pattern: / ED /i, replacement: " Edition " },
+        { pattern: / \(NEW PTG\) /i, replacement: " New Printing" },
+        { pattern: / PTG /i, replacement: " Printing " },
+        { pattern: / ANNIV /i, replacement: " Anniversary" },
+        { pattern: / GN /i, replacement: " Graphic Novel " },
+        { pattern: / DLX /i, replacement: " Deluxe " },
+        { pattern: / O\/T /i, replacement: " of the " },
+        { pattern: / ORIG /i, replacement: " Original " },
+        { pattern: / YRS /i, replacement: " Years " },
+        { pattern: / TNG /i, replacement: " The Next Generation " },
+        { pattern: / SGN /i, replacement: " Signature" },
+    ]
 
-    cleanedTitle = cleanedTitle.replace(/ \(MR\) /i, "")
-    cleanedTitle = cleanedTitle.replace(/ \( $/, "")
-    cleanedTitle = cleanedTitle.replace(/ \(OF \d+\) /, "")
-    cleanedTitle = cleanedTitle.replace(/ \(USE [A-Z]{3}\d+\) /i, "")
-    cleanedTitle = cleanedTitle.replace(/ \(C /i, "")
-    cleanedTitle = cleanedTitle.replace(/ \(RES\) /i, "")
-    cleanedTitle = cleanedTitle.replace(/ VOL /i, " Vol. ")
-    cleanedTitle = cleanedTitle.replace(/ CVR /i, " Cover ")
-    cleanedTitle = cleanedTitle.replace(/ VAR /i, " Variant ")
-    cleanedTitle = cleanedTitle.replace(/ LMT /i, " Limited ")
-    cleanedTitle = cleanedTitle.replace(/ LT /i, " Limited ")
-    cleanedTitle = cleanedTitle.replace(/ LTD /i, " Limited ")
-    cleanedTitle = cleanedTitle.replace(/ ED /i, " Edition ")
-    cleanedTitle = cleanedTitle.replace(/ PTG /i, " Printing ")
-    cleanedTitle = cleanedTitle.replace(/ ANNIV /i, " Anniversary ")
-    cleanedTitle = cleanedTitle.replace(/ GN /i, " Graphic Novel ")
-    cleanedTitle = cleanedTitle.replace(/ DLX /i, " Deluxe ")
-    cleanedTitle = cleanedTitle.replace(/ O\/T /i, " of the ")
-    cleanedTitle = cleanedTitle.replace(/ ORIG /i, " Original ")
-    cleanedTitle = cleanedTitle.replace(/ YRS /i, " Years ")
-    //cleanedTitle = cleanedTitle.replace(/ WR /i, " ")
-    cleanedTitle = cleanedTitle.replace(/ \(NEW PTG\) /i, " New Printing ")
-    cleanedTitle = cleanedTitle.replace(/ TNG /i, " The Next Generation ")
-    cleanedTitle = cleanedTitle.replace(/ SGN /i, " Signature ")
+    let cleanedTitle = title
+    itemsToClean.forEach(
+        (item) => (cleanedTitle = cleanedTitle.replace(item.pattern, item.replacement))
+    )
     cleanedTitle = cleanedTitle.trim()
     cleanedTitle = toProperCasing(cleanedTitle)
 
@@ -89,12 +237,12 @@ function getCleanedTitle(title) {
 }
 
 async function getCompiledComic(comic) {
-    const compiledComic = new comicModel({ _id: new mongoose.Types.ObjectId() })
+    const compiledComic = {}
 
     compiledComic.diamondID = comic.diamondID
     compiledComic.publisher = { id: null, name: comic.publisher.name }
     compiledComic.series = { id: null, name: comic.series.name }
-    compiledComic.releaseDate = comic.releaseDate
+    compiledComic.releaseDate = getFormattedReleaseDate(comic.releaseDate)
     compiledComic.coverPrice = comic.coverPrice
     compiledComic.cover = comic.cover
     compiledComic.description = comic.description
@@ -113,13 +261,13 @@ async function getCompiledComic(comic) {
         if (compiledComic.title.match(/ \(NEW PTG\) /i) || compiledComic.title.match(/ NEW PTG /i))
             compiledComic.variantType = "spr"
         compiledComic.ageRating = compiledComic.title.match(/ \(MR\) /i) ? "MA" : ""
-        compiledComic.isMiniSeries = compiledComic.title.match(/ \(OF \d+\) /i)
+        compiledComic.isMiniSeries = compiledComic.title.match(/ \(OF \d+\) /i) !== null
         if (comic.isMiniSeries)
             compiledComic.miniSeriesLimit = getMiniSeriesLimitFromTitle(comic.title)
         else compiledComic.miniSeriesLimit = 0
-        compiledComic.isOneShot = compiledComic.title.match(/ ONE SHOT /i)
+        compiledComic.isOneShot = compiledComic.title.match(/ ONE SHOT /i) !== null
         if (compiledComic.format !== "Comic") compiledComic.format = getFormatFromTitle(comic.title)
-        compiledComic.itemNumber = getItemNumberFromTitle(comic.title, comic.format)
+        compiledComic.itemNumber = getItemNumberFromTitle(compiledComic.title, compiledComic.format)
         compiledComic.title = getCleanedTitle(comic.title)
     }
 

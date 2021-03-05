@@ -26,7 +26,7 @@ function getCreatorTypesFromScrapedCreator(scrapedCreator, existingTypes) {
 function addScrapedCreatorToList(scrapedCreator, creators) {
     scrapedCreator.name = scrapedCreator.name.replace(",", "").substring(1)
     const index = creators.findIndex((c) => c.name === scrapedCreator.name)
-    if (index)
+    if (index > 0)
         creators[index].types.push.apply(
             creators[index].types,
             getCreatorTypesFromScrapedCreator(scrapedCreator, creators[index].types)
@@ -81,7 +81,7 @@ function getCreatorsFromNodes(nodes) {
     if (!nodes) infoLogger.error(`! No comic creator nodes`)
     else {
         const creators = []
-        const scrapedCreator = { name: "", types: [] }
+        const scrapedCreator = { name: "", type: "" }
 
         nodes.forEach((node, index, nodes) => {
             if (isNameNode(node)) {

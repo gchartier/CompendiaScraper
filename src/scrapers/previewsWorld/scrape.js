@@ -5,7 +5,7 @@ const { infoLogger } = require("../../utils/logger.js")
 const getCompiledComic = require("./compile/comic.js")
 const toProperCasing = require("../../utils/toProperCasing")
 
-const SLEEP_SECONDS = 3
+const SLEEP_SECONDS = 5
 
 async function getScrapedReleaseLinksAndFormats() {
     const newReleasesURL = "https://www.previewsworld.com/NewReleases"
@@ -24,7 +24,7 @@ async function getScrapedReleaseLinksAndFormats() {
 
     // Change to newReleaseLinks.length for prod
     const linksAndFormats = []
-    for (let i = 0; i < 1; i++)
+    for (let i = 0; i < newReleaseLinks.length; i++)
         linksAndFormats.push({
             link: newReleaseLinks[i].attribs.href,
             format: newReleaseFormats[i],
@@ -63,7 +63,9 @@ async function getScrapedRelease(releaseLink, releaseFormat) {
         description: $("div.Text", newReleaseResponse)
             .first()
             .contents()
-            .filter(() => this.type === "text")
+            .filter(function () {
+                return this.type === "text"
+            })
             .text()
             .replace(/\s+/g, " ")
             .trim(),
