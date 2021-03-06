@@ -10,7 +10,6 @@ module.exports = (async () => {
 
         await connect()
         comics.push.apply(comics, await getScrapedPreviewsWorldReleases())
-        dataLogger.info(JSON.stringify(comics, null, " "))
         //await commitComics(comics)
     }
     catch(error) {

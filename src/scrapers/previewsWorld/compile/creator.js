@@ -46,10 +46,12 @@ function getIndexOfFirstMatchingCreator(creators, creatorToMatch) {
 }
 
 function creatorNameIsValid(creatorName) {
+    const paddedName = ` ${creatorName} `
+
     return (
-        creatorName.match(/Photo/i) === null &&
-        creatorName.match(/More/i) === null &&
-        creatorName.match(/Blank Cover/i) === null
+        paddedName.match(/ Photo /i) === null &&
+        paddedName.match(/ More /i) === null &&
+        paddedName.match(/ Blank Cover /i) === null
     )
 }
 

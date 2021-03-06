@@ -9,6 +9,10 @@ function getSolicitDateFromDiamondID(diamondID) {
     return `${getMonthFromAbbreviation(solicitationTag.slice(0, 3))} 20${solicitationTag.slice(3)}`
 }
 
+function getSeriesNameFromTitle(title) {
+    return getCleanedTitle(title)
+}
+
 function getPrintingNumberFromTitle(title) {
     const printingNums = []
     if (title.match(/ NEW PTG /i) === null && title.match(/\d+\w+ PTG /i)) {
@@ -198,38 +202,64 @@ function getItemNumberFromTitle(title, format) {
     return itemNumbers[0]
 }
 
-function getCleanedTitle(title) {
+function getCoverLetterFromTitle(title) {
+    let coverLetter = ""
+    if (title.match(/ CVR \w+ /i) !== null) {
+        const coverLetterMatch = title.match(/ CVR \w+ /i).toString()
+        const letter = coverLetterMatch.substring(5, coverLetterMatch.length - 1)
+        coverLetter = letter
+    }
+    return coverLetter
+}
+
+function removeCreatorNamesFromTitle(title, creators) {
+    let cleanedTitle = title
+
+    if (title.match(/ CVR \w+ /i) !== null)
+        creators.forEach(({ name }) => {
+            const nameParts = name.split(" ")
+            const lastName = nameParts[nameParts.length - 1]
+            const creatorNameRegex = new RegExp(` ${lastName}( &)? `, "i")
+            cleanedTitle = cleanedTitle.replace(creatorNameRegex, " ")
+        })
+
+    return cleanedTitle
+}
+
+function getCleanedTitle(title, creators) {
     const itemsToClean = [
-        { pattern: / #\d+ /, replacement: "" },
-        { pattern: / \(MR\) /i, replacement: "" },
-        { pattern: / \( $/, replacement: "" },
-        { pattern: / \(OF \d+\) /, replacement: "" },
-        { pattern: / \(USE [A-Z]{3}\d+\) /i, replacement: "" },
-        { pattern: / \(C /i, replacement: "" },
-        { pattern: / \(RES\) /i, replacement: "" },
+        { pattern: / #\d+ /, replacement: " " },
+        { pattern: / \(MR\) /i, replacement: " " },
+        { pattern: / \( $/, replacement: " " },
+        { pattern: / \(OF \d+\) /, replacement: " " },
+        { pattern: / \(USE [A-Z]{3}\d+\) /i, replacement: " " },
+        { pattern: / \(C /i, replacement: " " },
+        { pattern: / \(RES\) /i, replacement: " " },
         { pattern: / VOL /i, replacement: " Vol. " },
-        { pattern: / CVR /i, replacement: " Cover " },
+        { pattern: / CVR \w+ /i, replacement: " " },
+        { pattern: / BLANK CVR /i, replacement: " " },
         { pattern: / VAR /i, replacement: " Variant " },
         { pattern: / LMT /i, replacement: " Limited " },
         { pattern: / LT /i, replacement: " Limited " },
         { pattern: / LTD /i, replacement: " Limited " },
         { pattern: / ED /i, replacement: " Edition " },
-        { pattern: / \(NEW PTG\) /i, replacement: " New Printing" },
+        { pattern: / \(NEW PTG\) /i, replacement: " New Printing " },
         { pattern: / PTG /i, replacement: " Printing " },
-        { pattern: / ANNIV /i, replacement: " Anniversary" },
+        { pattern: / ANNIV /i, replacement: " Anniversary " },
         { pattern: / GN /i, replacement: " Graphic Novel " },
         { pattern: / DLX /i, replacement: " Deluxe " },
         { pattern: / O\/T /i, replacement: " of the " },
         { pattern: / ORIG /i, replacement: " Original " },
         { pattern: / YRS /i, replacement: " Years " },
         { pattern: / TNG /i, replacement: " The Next Generation " },
-        { pattern: / SGN /i, replacement: " Signature" },
+        { pattern: / SGN /i, replacement: " Signature " },
     ]
 
     let cleanedTitle = title
     itemsToClean.forEach(
         (item) => (cleanedTitle = cleanedTitle.replace(item.pattern, item.replacement))
     )
+    cleanedTitle = removeCreatorNamesFromTitle(title, creators)
     cleanedTitle = cleanedTitle.trim()
     cleanedTitle = toProperCasing(cleanedTitle)
 
@@ -241,7 +271,6 @@ async function getCompiledComic(comic) {
 
     compiledComic.diamondID = comic.diamondID
     compiledComic.publisher = { id: null, name: comic.publisher.name }
-    compiledComic.series = { id: null, name: comic.series.name }
     compiledComic.releaseDate = getFormattedReleaseDate(comic.releaseDate)
     compiledComic.coverPrice = comic.coverPrice
     compiledComic.cover = comic.cover
@@ -255,6 +284,7 @@ async function getCompiledComic(comic) {
     else {
         compiledComic.title = comic.title
         compiledComic.printingNumber = getPrintingNumberFromTitle(comic.title)
+        compiledComic.coverLetter = getCoverLetterFromTitle(comic.title)
         compiledComic.versionOf = null
         compiledComic.variantType = null
         if (compiledComic.title.match(/ CVR [A-Z]/i)) compiledComic.variantType = "cvr"
@@ -268,7 +298,11 @@ async function getCompiledComic(comic) {
         compiledComic.isOneShot = compiledComic.title.match(/ ONE SHOT /i) !== null
         if (compiledComic.format !== "Comic") compiledComic.format = getFormatFromTitle(comic.title)
         compiledComic.itemNumber = getItemNumberFromTitle(compiledComic.title, compiledComic.format)
-        compiledComic.title = getCleanedTitle(comic.title)
+        compiledComic.title = getCleanedTitle(comic.title, compiledComic.creators)
+        compiledComic.series = {
+            id: null,
+            name: comic.series.link ? comic.series.name : compiledComic.title,
+        }
     }
 
     return compiledComic

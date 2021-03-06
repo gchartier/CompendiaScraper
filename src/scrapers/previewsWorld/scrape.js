@@ -1,7 +1,7 @@
 const $ = require("cheerio")
 const axios = require("axios")
 const sleep = require("../../utils/sleep")
-const { infoLogger } = require("../../utils/logger.js")
+const { infoLogger, dataLogger } = require("../../utils/logger.js")
 const getCompiledComic = require("./compile/comic.js")
 const toProperCasing = require("../../utils/toProperCasing")
 
@@ -49,12 +49,19 @@ async function getScrapedRelease(releaseLink, releaseFormat) {
     infoLogger.info(`# Getting new release from ${url}`)
     await sleep(SLEEP_SECONDS)
     const { data: newReleaseResponse } = await axios.get(url)
+
+    const seriesLink = $(".ViewSeriesItemsLink", newReleaseResponse).attr("href")
+    const seriesName = seriesLink ? await getScrapedSeriesName(baseURL + seriesLink) : ""
+    if (!seriesLink)
+        infoLogger.warn(
+            "Could not retrieve series name from series link. Series name will be retrieved from title."
+        )
+
     const scrapedRelease = {
         title: " " + $(".Title", newReleaseResponse).text() + " ",
         series: {
-            name: await getScrapedSeriesName(
-                baseURL + $(".ViewSeriesItemsLink", newReleaseResponse).attr("href")
-            ),
+            name: seriesName,
+            link: seriesLink,
         },
         publisher: { name: toProperCasing($(".Publisher", newReleaseResponse).text()) },
         releaseDate: $(".ReleaseDate", newReleaseResponse).text().slice(10),
@@ -84,6 +91,7 @@ async function getScrapedPreviewsWorldReleases() {
     const scrapedLinksAndFormats = await getScrapedReleaseLinksAndFormats()
     for (const [index, { link, format }] of scrapedLinksAndFormats.entries()) {
         releases.push(await getScrapedRelease(link, format))
+        dataLogger.info(JSON.stringify(releases[releases.length - 1], null, " "))
         infoLogger.info(`# End of New Release ${index + 1} from ${link}`)
     }
 
