@@ -1,9 +1,9 @@
 const $ = require("cheerio")
 const axios = require("axios")
 const sleep = require("../../utils/sleep")
-const { infoLogger, dataLogger } = require("../../utils/logger.js")
 const getCompiledComic = require("./compile/comic.js")
 const toProperCasing = require("../../utils/toProperCasing")
+const { infoLogger, dataLogger } = require("../../utils/logger.js")
 
 const SLEEP_SECONDS = 5
 
@@ -22,7 +22,6 @@ async function getScrapedReleaseLinksAndFormats() {
     if (newReleaseLinks.length !== newReleaseFormats.length)
         throw new Error("Retrieved links and formats do not have equal lengths")
 
-    // Change to newReleaseLinks.length for prod
     const linksAndFormats = []
     for (let i = 0; i < newReleaseLinks.length; i++)
         linksAndFormats.push({
@@ -37,7 +36,7 @@ async function getScrapedSeriesName(seriesLink) {
     await sleep(SLEEP_SECONDS)
     const { data: seriesNameHTML } = await axios.get(seriesLink)
     if (!seriesNameHTML)
-        throw new Error(`Failed HTML request to ${seriesLink} and could not retrieve series name`)
+        infoLogger.warn(`! Failed HTML request to ${seriesLink} and could not retrieve series name`)
 
     return toProperCasing($(".Title", seriesNameHTML).text().slice(8))
 }
@@ -50,15 +49,18 @@ async function getScrapedRelease(releaseLink, releaseFormat) {
     await sleep(SLEEP_SECONDS)
     const { data: newReleaseResponse } = await axios.get(url)
 
+    const title = " " + $(".Title", newReleaseResponse).text() + " "
     const seriesLink = $(".ViewSeriesItemsLink", newReleaseResponse).attr("href")
     const seriesName = seriesLink ? await getScrapedSeriesName(baseURL + seriesLink) : ""
     if (!seriesLink)
         infoLogger.warn(
-            "Could not retrieve series name from series link. Series name will be retrieved from title."
+            "! Could not retrieve series name from series link. Series name will be retrieved from title."
         )
 
+    dataLogger.info(`# Scraped from ${url} with title ${title}:`)
+
     const scrapedRelease = {
-        title: " " + $(".Title", newReleaseResponse).text() + " ",
+        title: title,
         series: {
             name: seriesName,
             link: seriesLink,
@@ -81,7 +83,11 @@ async function getScrapedRelease(releaseLink, releaseFormat) {
         format: releaseFormat === 1 ? "Comic" : "",
     }
 
-    return await getCompiledComic(scrapedRelease)
+    const compiledComic = await getCompiledComic(scrapedRelease)
+    dataLogger.info(JSON.stringify(compiledComic, null, " "))
+    infoLogger.info(`# Finished new release from ${url}`)
+
+    return compiledComic
 }
 
 async function getScrapedPreviewsWorldReleases() {
@@ -89,11 +95,8 @@ async function getScrapedPreviewsWorldReleases() {
 
     const releases = []
     const scrapedLinksAndFormats = await getScrapedReleaseLinksAndFormats()
-    for (const [index, { link, format }] of scrapedLinksAndFormats.entries()) {
+    for (const { link, format } of scrapedLinksAndFormats)
         releases.push(await getScrapedRelease(link, format))
-        dataLogger.info(JSON.stringify(releases[releases.length - 1], null, " "))
-        infoLogger.info(`# End of New Release ${index + 1} from ${link}`)
-    }
 
     infoLogger.info(`# Finished retrieving Previews World new releases`)
     return releases

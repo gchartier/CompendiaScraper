@@ -1,13 +1,18 @@
+const patterns = require("../patterns.js")
 const { infoLogger } = require("../../../utils/logger.js")
 
 function getCreatorTypesFromScrapedCreator(scrapedCreator, existingTypes) {
     const creatorTypes = [
-        { name: "Writer", matches: (node) => node.match(/\(W\)/i), values: ["W"] },
-        { name: "Artist", matches: (node) => node.match(/\(A\)/i), values: ["A"] },
-        { name: "Cover Artist", matches: (node) => node.match(/\(CA\)/i), values: ["CA"] },
+        { name: "Writer", matches: (node) => node.match(patterns.writer), values: ["W"] },
+        { name: "Artist", matches: (node) => node.match(patterns.artist), values: ["A"] },
+        {
+            name: "Cover Artist",
+            matches: (node) => node.match(patterns.coverArtist),
+            values: ["CA"],
+        },
         {
             name: "Artist / Cover Artist",
-            matches: (node) => node.match(/\(A\/CA\)/i),
+            matches: (node) => node.match(patterns.artistAndCoverArtist),
             values: ["A", "CA"],
         },
     ]
@@ -20,6 +25,8 @@ function getCreatorTypesFromScrapedCreator(scrapedCreator, existingTypes) {
             })
     })
 
+    if (types.length < 1) infoLogger.error("! Creator did not have any types")
+
     return types
 }
 
@@ -31,11 +38,14 @@ function addScrapedCreatorToList(scrapedCreator, creators) {
             creators[index].types,
             getCreatorTypesFromScrapedCreator(scrapedCreator, creators[index].types)
         )
-    else
+    else {
+        if (!scrapedCreator.name) infoLogger.error("! Scraped creator did not have a name")
+
         creators.push({
             name: scrapedCreator.name,
             types: getCreatorTypesFromScrapedCreator(scrapedCreator, []),
         })
+    }
     scrapedCreator.name = ""
 }
 
@@ -49,9 +59,9 @@ function creatorNameIsValid(creatorName) {
     const paddedName = ` ${creatorName} `
 
     return (
-        paddedName.match(/ Photo /i) === null &&
-        paddedName.match(/ More /i) === null &&
-        paddedName.match(/ Blank Cover /i) === null
+        paddedName.match(patterns.photo) === null &&
+        paddedName.match(patterns.more) === null &&
+        paddedName.match(patterns.blankCover) === null
     )
 }
 
@@ -80,7 +90,7 @@ function isLastNode(nodeList, index) {
 }
 
 function getCreatorsFromNodes(nodes) {
-    if (!nodes) infoLogger.error(`! No comic creator nodes`)
+    if (!nodes) infoLogger.warn(`! No comic creator nodes found`)
     else {
         const creators = []
         const scrapedCreator = { name: "", type: "" }
