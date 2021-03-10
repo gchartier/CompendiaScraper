@@ -3,7 +3,7 @@ const util = require("util")
 const axios = require("axios")
 const aws = require("aws-sdk")
 const stream = require("stream")
-const { infoLogger } = require("./logger.js")
+const logger = require("./logger.js")
 
 async function downloadCoverFromURL(coverURL) {
     const imageResponse = await axios({ method: "GET", url: coverURL, responseType: "stream" })
@@ -40,7 +40,7 @@ async function hostCoverAndGetURL(coverURL, comicID) {
 
         return coverS3URL
     } catch (error) {
-        infoLogger.error(
+        logger.error(
             `! Failed download image and upload to S3 for ${coverURL} with error: ${JSON.stringify(
                 error
             )}`

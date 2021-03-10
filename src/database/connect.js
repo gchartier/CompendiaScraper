@@ -1,5 +1,5 @@
 const mongoose = require("mongoose")
-const { infoLogger } = require("../utils/logger.js")
+const logger = require("../utils/logger.js")
 const comicModel = require("../models/comic.js")
 const seriesModel = require("../models/series.js")
 const { creatorModel } = require("../models/creator.js")
@@ -24,7 +24,7 @@ async function connect() {
         await creatorModel.deleteMany({})
         await seriesModel.deleteMany({})
     } catch (error) {
-        infoLogger.error(`! MongoDB error: ${error.message}`)
+        logger.error(`! MongoDB error: ${error.message}`)
     }
 }
 

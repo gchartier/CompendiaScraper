@@ -1,12 +1,12 @@
 const mongoose = require("mongoose")
-const { infoLogger } = require("../utils/logger.js")
+const logger = require("../utils/logger.js")
 const seriesModel = require("../models/series.js")
 
 async function updateExistingSeries(doc, query, comicID, comicTitle) {
     if (query.entries.includes(doc.entries[0]) === false) {
         query.entries.push(doc.entries[0])
         await query.save()
-        infoLogger.info(
+        logger.info(
             `+ Existing Series: ${seriesNameQuery.name} with id = ${seriesNameQuery._id} updated with new entry ${comicTitle} with id = ${comicID} in database`
         )
     }
@@ -14,7 +14,7 @@ async function updateExistingSeries(doc, query, comicID, comicTitle) {
 
 async function insertNewSeries(seriesDoc) {
     await seriesDoc.save()
-    infoLogger.info(`+ New Series: ${seriesDoc.name} with id = ${seriesDoc._id} saved to database`)
+    logger.info(`+ New Series: ${seriesDoc.name} with id = ${seriesDoc._id} saved to database`)
 }
 
 async function insertOrUpdateSeries(comicDoc) {

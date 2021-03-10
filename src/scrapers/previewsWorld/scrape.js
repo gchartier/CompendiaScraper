@@ -1,9 +1,9 @@
 const $ = require("cheerio")
 const axios = require("axios")
 const sleep = require("../../utils/sleep")
+const logger = require("../../utils/logger.js")
 const getCompiledComic = require("./compile/comic.js")
 const toProperCasing = require("../../utils/toProperCasing")
-const { infoLogger, dataLogger } = require("../../utils/logger.js")
 
 const SLEEP_SECONDS = 5
 
@@ -36,7 +36,7 @@ async function getScrapedSeriesName(seriesLink) {
     await sleep(SLEEP_SECONDS)
     const { data: seriesNameHTML } = await axios.get(seriesLink)
     if (!seriesNameHTML)
-        infoLogger.warn(`! Failed HTML request to ${seriesLink} and could not retrieve series name`)
+        logger.warn(`! Failed HTML request to ${seriesLink} and could not retrieve series name`)
 
     return toProperCasing($(".Title", seriesNameHTML).text().slice(8))
 }
@@ -45,7 +45,7 @@ async function getScrapedRelease(releaseLink, releaseFormat) {
     const baseURL = "https://www.previewsworld.com"
     const url = `${baseURL}${releaseLink}`
 
-    infoLogger.info(`# Getting new release from ${url}`)
+    logger.info(`# Getting new release from ${url}`)
     await sleep(SLEEP_SECONDS)
     const { data: newReleaseResponse } = await axios.get(url)
 
@@ -53,11 +53,11 @@ async function getScrapedRelease(releaseLink, releaseFormat) {
     const seriesLink = $(".ViewSeriesItemsLink", newReleaseResponse).attr("href")
     const seriesName = seriesLink ? await getScrapedSeriesName(baseURL + seriesLink) : ""
     if (!seriesLink)
-        infoLogger.warn(
+        logger.warn(
             "! Could not retrieve series name from series link. Series name will be retrieved from title."
         )
 
-    dataLogger.info(`# Scraped from ${url} with title ${title}:`)
+    logger.info(`# Scraped from ${url} with title ${title}:`)
 
     const scrapedRelease = {
         title: title,
@@ -84,21 +84,21 @@ async function getScrapedRelease(releaseLink, releaseFormat) {
     }
 
     const compiledComic = await getCompiledComic(scrapedRelease)
-    dataLogger.info(JSON.stringify(compiledComic, null, " "))
-    infoLogger.info(`# Finished new release from ${url}`)
+    logger.info(JSON.stringify(compiledComic, null, " "))
+    logger.info(`# Finished new release from ${url}`)
 
     return compiledComic
 }
 
 async function getScrapedPreviewsWorldReleases() {
-    infoLogger.info(`# Started retrieving Previews World new releases`)
+    logger.info(`# Started retrieving Previews World new releases`)
 
     const releases = []
     const scrapedLinksAndFormats = await getScrapedReleaseLinksAndFormats()
     for (const { link, format } of scrapedLinksAndFormats)
         releases.push(await getScrapedRelease(link, format))
 
-    infoLogger.info(`# Finished retrieving Previews World new releases`)
+    logger.info(`# Finished retrieving Previews World new releases`)
     return releases
 }
 

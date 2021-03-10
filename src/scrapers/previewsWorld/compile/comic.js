@@ -1,14 +1,14 @@
 const { format } = require("date-fns")
+const patterns = require("../patterns.js")
+const logger = require("../../../utils/logger.js")
 const getCreatorsFromNodes = require("./creator.js")
-const { infoLogger } = require("../../../utils/logger.js")
 const toProperCasing = require("../../../utils/toProperCasing.js")
 const getMonthFromAbbreviation = require("../../../utils/getMonth.js")
-const patterns = require("../patterns.js")
 
 function getSolicitDateFromDiamondID(diamondID) {
     let solicitationDate = ""
     if (!diamondID || diamondID.length < 5)
-        infoLogger.error(`! Could not get the the solicitation date from Diamond ID`)
+        logger.error(`! Could not get the the solicitation date from Diamond ID`)
     else {
         const solicitationTag = diamondID.slice(0, 5)
         solicitationDate = `${getMonthFromAbbreviation(
@@ -30,7 +30,7 @@ function getPrintingNumberFromTitle(title) {
                 printingNums.push(titleParts[index - 1].match(/\d+/g))
         })
         if (printingNums.length < 1)
-            infoLogger.error("! Expected printing numbers from title but didn't find any")
+            logger.error("! Expected printing numbers from title but didn't find any")
     }
     const printingNum = printingNums.reduce((acc, curr) => acc + curr, "")
 
@@ -63,7 +63,7 @@ function getMiniSeriesLimitFromTitle(title) {
         miniSeriesLimit = miniSeriesInfo.substring(5, miniSeriesInfo.length - 2)
 
         if (!miniSeriesLimit || isNaN(miniSeriesLimit)) {
-            infoLogger.error("! Expected to find mini series limit from title but didn't find it")
+            logger.error("! Expected to find mini series limit from title but didn't find it")
             miniSeriesLimit = "0"
         }
     }
@@ -262,10 +262,10 @@ function getItemNumberFromTitle(title, format) {
     })
 
     if (itemNumbers.length === 0) {
-        infoLogger.warn("! Item number not found from title. Setting as blank.")
+        logger.warn("! Item number not found from title. Setting as blank.")
         itemNumbers.push("")
     } else if (itemNumbers.length > 1)
-        infoLogger.error("! More than one item number match was found from the title.")
+        logger.error("! More than one item number match was found from the title.")
 
     return itemNumbers[0]
 }
@@ -278,7 +278,7 @@ function getCoverLetterFromTitle(title) {
         const letter = matchString.substring(5, matchString.length - 1)
         coverLetter = letter
         if (coverLetter.length < 1)
-            infoLogger.error("! Cover letter from title was expected but not found")
+            logger.error("! Cover letter from title was expected but not found")
     }
 
     return coverLetter
@@ -290,8 +290,7 @@ function getVariantTypeFromTitle(title) {
     if (title.match(patterns.reprint)) variantTypes.push("rpr")
     if (title.match(patterns.subsequentPrintingNum)) variantTypes.push("spr")
 
-    if (variantTypes.length > 1)
-        infoLogger.error("! More than one variant type found for this comic.")
+    if (variantTypes.length > 1) logger.error("! More than one variant type found for this comic.")
 
     return variantTypes.length < 1 ? null : variantTypes[0]
 }
@@ -364,7 +363,7 @@ async function getCompiledComic(comic) {
     compiledComic.creators = getCreatorsFromNodes(comic.creators)
     compiledComic.format = comic.format
     compiledComic.solicitationDate = getSolicitDateFromDiamondID(compiledComic.diamondID)
-    if (!comic.title) infoLogger.error(`! The comic title was not found`)
+    if (!comic.title) logger.error(`! The comic title was not found`)
     else {
         compiledComic.title = comic.title
         compiledComic.printingNumber = getPrintingNumberFromTitle(comic.title)

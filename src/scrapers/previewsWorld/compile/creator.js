@@ -1,5 +1,5 @@
 const patterns = require("../patterns.js")
-const { infoLogger } = require("../../../utils/logger.js")
+const logger = require("../../../utils/logger.js")
 
 function getCreatorTypesFromScrapedCreator(scrapedCreator, existingTypes) {
     const creatorTypes = [
@@ -25,7 +25,7 @@ function getCreatorTypesFromScrapedCreator(scrapedCreator, existingTypes) {
             })
     })
 
-    if (types.length < 1) infoLogger.error("! Creator did not have any types")
+    if (types.length < 1) logger.error("! Creator did not have any types")
 
     return types
 }
@@ -39,7 +39,7 @@ function addScrapedCreatorToList(scrapedCreator, creators) {
             getCreatorTypesFromScrapedCreator(scrapedCreator, creators[index].types)
         )
     else {
-        if (!scrapedCreator.name) infoLogger.error("! Scraped creator did not have a name")
+        if (!scrapedCreator.name) logger.error("! Scraped creator did not have a name")
 
         creators.push({
             name: scrapedCreator.name,
@@ -90,7 +90,7 @@ function isLastNode(nodeList, index) {
 }
 
 function getCreatorsFromNodes(nodes) {
-    if (!nodes) infoLogger.warn(`! No comic creator nodes found`)
+    if (!nodes) logger.warn(`! No comic creator nodes found`)
     else {
         const creators = []
         const scrapedCreator = { name: "", type: "" }

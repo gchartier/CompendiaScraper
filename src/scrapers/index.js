@@ -1,7 +1,7 @@
 require("dotenv").config()
+const logger = require("../utils/logger.js")
 const connect = require("../database/connect.js")
 const commitComics = require("../database/commit.js")
-const { infoLogger } = require("../utils/logger.js")
 const getScrapedPreviewsWorldReleases = require("./previewsWorld/scrape.js")
 
 module.exports = (async () => {
@@ -13,7 +13,7 @@ module.exports = (async () => {
         //await commitComics(comics)
     }
     catch(error) {
-        infoLogger.error(`! ${error.message}`)
+        logger.error(`! ${error.message}`)
     }
     finally {
         process.exit()
