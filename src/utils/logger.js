@@ -18,7 +18,7 @@ const logger = createLogger({
             ),
         }),
         new transports.DailyRotateFile({
-            filename: `${logDirs.find((dir) => dir.name === "log").path}/%DATE%.log`,
+            filename: "log/%DATE%.log",
             datePattern: "YYYY-MM-DD",
             format: format.combine(
                 format.printf((info) => `${info.timestamp} ${info.level}: ${info.message}`)

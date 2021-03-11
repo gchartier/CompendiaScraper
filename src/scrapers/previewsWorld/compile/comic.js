@@ -267,7 +267,9 @@ function getItemNumberFromTitle(title, format) {
     } else if (itemNumbers.length > 1)
         logger.error("! More than one item number match was found from the title.")
 
-    return itemNumbers[0]
+    getItemNumberWithout
+
+    return itemNumbers[0].replace(patterns.leadingZeros, "")
 }
 
 function getCoverLetterFromTitle(title) {
@@ -324,6 +326,7 @@ function getCleanedTitle(title, creators) {
         { pattern: patterns.volume, replacement: " " },
         { pattern: patterns.coverLetter, replacement: " " },
         { pattern: patterns.blankCover, replacement: " " },
+        { pattern: patterns.cosplayPhotoCover, replacement: " " },
         { pattern: patterns.variant, replacement: " " },
         { pattern: patterns.limited, replacement: " Limited " },
         { pattern: patterns.edition, replacement: " Edition " },
@@ -332,6 +335,8 @@ function getCleanedTitle(title, creators) {
         { pattern: patterns.anniversary, replacement: " Anniversary " },
         { pattern: patterns.graphicNovel, replacement: " " },
         { pattern: patterns.tradePaperback, replacement: " " },
+        { pattern: patterns.hardcover, replacement: " " },
+        { pattern: patterns.operatingAs, replacement: " " },
         { pattern: patterns.deluxe, replacement: " Deluxe " },
         { pattern: patterns.ofThe, replacement: " of the " },
         { pattern: patterns.original, replacement: " Original " },
@@ -372,7 +377,7 @@ async function getCompiledComic(comic) {
         compiledComic.variantType = getVariantTypeFromTitle(compiledComic.title)
         compiledComic.ageRating = compiledComic.title.match(patterns.mature) ? "MA" : ""
         compiledComic.isMiniSeries = compiledComic.title.match(patterns.miniSeries) !== null
-        if (comic.isMiniSeries)
+        if (compiledComic.isMiniSeries)
             compiledComic.miniSeriesLimit = getMiniSeriesLimitFromTitle(compiledComic.title)
         else compiledComic.miniSeriesLimit = 0
         compiledComic.isOneShot = compiledComic.title.match(patterns.oneShot) !== null

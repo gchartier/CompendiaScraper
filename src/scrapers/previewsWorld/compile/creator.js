@@ -33,18 +33,18 @@ function getCreatorTypesFromScrapedCreator(scrapedCreator, existingTypes) {
 function addScrapedCreatorToList(scrapedCreator, creators) {
     scrapedCreator.name = scrapedCreator.name.replace(",", "").substring(1)
     const index = creators.findIndex((c) => c.name === scrapedCreator.name)
-    if (index > 0)
+    if (index > -1)
         creators[index].types.push.apply(
             creators[index].types,
             getCreatorTypesFromScrapedCreator(scrapedCreator, creators[index].types)
         )
     else {
         if (!scrapedCreator.name) logger.error("! Scraped creator did not have a name")
-
-        creators.push({
-            name: scrapedCreator.name,
-            types: getCreatorTypesFromScrapedCreator(scrapedCreator, []),
-        })
+        else
+            creators.push({
+                name: scrapedCreator.name,
+                types: getCreatorTypesFromScrapedCreator(scrapedCreator, []),
+            })
     }
     scrapedCreator.name = ""
 }
@@ -60,6 +60,7 @@ function creatorNameIsValid(creatorName) {
 
     return (
         paddedName.match(patterns.photo) === null &&
+        paddedName.match(patterns.cosplay) === null &&
         paddedName.match(patterns.more) === null &&
         paddedName.match(patterns.blankCover) === null
     )
@@ -73,7 +74,7 @@ function getFilteredUniqueCreators(creators) {
     )
 }
 
-function isEndOfNameNode(node) {
+function isCommaInNode(node) {
     return node.includes(",")
 }
 
@@ -98,7 +99,7 @@ function getCreatorsFromNodes(nodes) {
         nodes.forEach((node, index, nodes) => {
             if (isNameNode(node)) {
                 scrapedCreator.name = scrapedCreator.name.concat(" " + node)
-                if (isEndOfNameNode(node)) addScrapedCreatorToList(scrapedCreator, creators)
+                if (isCommaInNode(node)) addScrapedCreatorToList(scrapedCreator, creators)
             } else if (isCreatorTypeNode(node)) {
                 if (scrapedCreator.name) addScrapedCreatorToList(scrapedCreator, creators)
                 scrapedCreator.type = node

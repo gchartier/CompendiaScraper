@@ -5,7 +5,7 @@ const logger = require("../../utils/logger.js")
 const getCompiledComic = require("./compile/comic.js")
 const toProperCasing = require("../../utils/toProperCasing")
 
-const SLEEP_SECONDS = 5
+const SLEEP_SECONDS = 3
 
 async function getScrapedReleaseLinksAndFormats() {
     const newReleasesURL = "https://www.previewsworld.com/NewReleases"
@@ -51,7 +51,7 @@ async function getScrapedRelease(releaseLink, releaseFormat) {
 
     const title = " " + $(".Title", newReleaseResponse).text() + " "
     const seriesLink = $(".ViewSeriesItemsLink", newReleaseResponse).attr("href")
-    const seriesName = seriesLink ? await getScrapedSeriesName(baseURL + seriesLink) : ""
+    const seriesName = seriesLink ? ` ${await getScrapedSeriesName(baseURL + seriesLink)} ` : ""
     if (!seriesLink)
         logger.warn(
             "! Could not retrieve series name from series link. Series name will be retrieved from title."
@@ -95,8 +95,10 @@ async function getScrapedPreviewsWorldReleases() {
 
     const releases = []
     const scrapedLinksAndFormats = await getScrapedReleaseLinksAndFormats()
-    for (const { link, format } of scrapedLinksAndFormats)
+    for (const [index, { link, format }] of scrapedLinksAndFormats.entries()) {
+        logger.info(`# Release ${index + 1} of ${scrapedLinksAndFormats.length}`)
         releases.push(await getScrapedRelease(link, format))
+    }
 
     logger.info(`# Finished retrieving Previews World new releases`)
     return releases
