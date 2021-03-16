@@ -1,5 +1,5 @@
 function toProperCasing(str) {
-    var i, j, lowers, uppers
+    let i, j, lowers, uppers
     str = str.replace(/([^\W_]+[^\s-]*) */g, function (txt) {
         return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
     })

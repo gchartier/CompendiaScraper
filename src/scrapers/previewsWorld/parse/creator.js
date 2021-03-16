@@ -90,7 +90,7 @@ function isLastNode(nodeList, index) {
     return nodeList.length - 1 === index
 }
 
-function getCreatorsFromNodes(nodes) {
+function getParsedCreatorsFromNodes(nodes) {
     if (!nodes) logger.warn(`! No comic creator nodes found`)
     else {
         const creators = []
@@ -112,4 +112,4 @@ function getCreatorsFromNodes(nodes) {
     }
 }
 
-module.exports = getCreatorsFromNodes
+module.exports = getParsedCreatorsFromNodes

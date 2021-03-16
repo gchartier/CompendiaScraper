@@ -1,7 +1,7 @@
 const { format } = require("date-fns")
 const patterns = require("../patterns.js")
 const logger = require("../../../utils/logger.js")
-const getCreatorsFromNodes = require("./creator.js")
+const getParsedCreatorsFromNodes = require("./creator.js")
 const toProperCasing = require("../../../utils/toProperCasing.js")
 const getMonthFromAbbreviation = require("../../../utils/getMonth.js")
 
@@ -267,8 +267,6 @@ function getItemNumberFromTitle(title, format) {
     } else if (itemNumbers.length > 1)
         logger.error("! More than one item number match was found from the title.")
 
-    getItemNumberWithout
-
     return itemNumbers[0].replace(patterns.leadingZeros, "")
 }
 
@@ -277,10 +275,12 @@ function getCoverLetterFromTitle(title) {
     const coverLetterMatch = title.match(patterns.coverLetter)
     if (coverLetterMatch !== null) {
         const matchString = coverLetterMatch.toString()
-        const letter = matchString.substring(5, matchString.length - 1)
+        const letter = matchString !== null ? matchString.substring(5, matchString.length - 1) : ""
         coverLetter = letter
         if (coverLetter.length < 1)
-            logger.error("! Cover letter from title was expected but not found")
+            logger.error(
+                "! Cover letter from title was expected but not found. Potential error in title"
+            )
     }
 
     return coverLetter
@@ -297,102 +297,181 @@ function getVariantTypeFromTitle(title) {
     return variantTypes.length < 1 ? null : variantTypes[0]
 }
 
+function removeVariantFromTitle(title) {
+    function getTitleAsReversedArrayOfPaddedWords(title) {
+        return title
+            .split(" ")
+            .reverse()
+            .filter((word) => word !== "")
+            .map((word) => ` ${word} `)
+    }
+
+    function isCoverLetter(word, index, words) {
+        return (
+            word.match(patterns.letter) &&
+            index < words.length - 1 &&
+            words[index + 1].match(patterns.cover)
+        )
+    }
+
+    function isFormatNumber(word) {
+        return word.match(patterns.number)
+    }
+
+    function isMiniSeries(word, index, words) {
+        return (
+            word.match(patterns.miniSeriesNumber) &&
+            index < words.length - 1 &&
+            words[index + 1].match(patterns.miniSeriesInd)
+        )
+    }
+
+    function isEndOfVariantString(word, index, words) {
+        return (
+            isCoverLetter(word, index, words) !== null ||
+            isFormatNumber(word) !== null ||
+            isMiniSeries(word, index, words) !== null
+        )
+    }
+
+    let cleanedTitle = title
+    if (title.match(patterns.variant)) {
+        const words = getTitleAsReversedArrayOfPaddedWords(cleanedTitle)
+
+        const titleWordsStartingWithVariant = []
+        let foundVariant = false
+        words.forEach((word) => {
+            if (word.match(patterns.variant)) foundVariant = true
+
+            if (foundVariant) titleWordsStartingWithVariant.push(word)
+        })
+
+        console.log(titleWordsStartingWithVariant)
+
+        const wordsToRemoveFromTitle = []
+        let isEndFound = false
+        titleWordsStartingWithVariant.forEach((word, index, words) => {
+            if (!isEndFound) {
+                if (isEndOfVariantString(word, index, words)) {
+                    console.log(word)
+                    isEndFound = true
+                } else wordsToRemoveFromTitle.push(word)
+            }
+        })
+        const titleStringToReplace = ` ${wordsToRemoveFromTitle
+            .reverse()
+            .map((word) => word.trim())
+            .join(" ")} `
+        cleanedTitle = cleanedTitle.replace(titleStringToReplace, " ")
+    }
+
+    return cleanedTitle
+}
+
 function removeCreatorNamesFromTitle(title, creators) {
     let cleanedTitle = title
     const coverLetterMatch = title.match(patterns.coverLetter)
-    const variantMatch = title.match(patterns.variantWithType)
 
-    if (coverLetterMatch !== null || variantMatch !== null)
-        creators.forEach(({ name }) => {
-            const nameParts = name.split(" ")
-            nameParts.forEach((part) => {
-                const creatorNameRegex = new RegExp(` ${part}( &)? `, "i")
-                cleanedTitle = cleanedTitle.replace(creatorNameRegex, " ")
-            })
-        })
+    if (coverLetterMatch !== null && creators) {
+        const creatorNames = creators.reduce((acc, curr) => {
+            const nameParts = curr.name.split(" ")
+            nameParts.forEach((part) => acc.push(part))
+            return acc
+        }, [])
+        const joinedNames = creatorNames.join("|")
+        const creatorNameWithAmpRegex = new RegExp(` CVR [A-Z] ${joinedNames} & [A-Z]+ `, "gi")
+        const creatorNameRegex = new RegExp(` CVR [A-Z] ${joinedNames}`, "gi")
+        cleanedTitle = cleanedTitle.replace(creatorNameWithAmpRegex, " ")
+        cleanedTitle = cleanedTitle.replace(creatorNameRegex, " ")
+    }
 
     return cleanedTitle
 }
 
 function getCleanedTitle(title, creators) {
     const itemsToClean = [
-        { pattern: patterns.number, replacement: " " },
-        { pattern: patterns.mature, replacement: " " },
-        { pattern: patterns.trailingParentheses, replacement: " " },
-        { pattern: patterns.miniSeries, replacement: " " },
-        { pattern: patterns.useOtherDiamondID, replacement: " " },
-        { pattern: patterns.trailingParenthesesC, replacement: " " },
-        { pattern: patterns.resolicit, replacement: " " },
-        { pattern: patterns.volume, replacement: " " },
-        { pattern: patterns.coverLetter, replacement: " " },
-        { pattern: patterns.blankCover, replacement: " " },
-        { pattern: patterns.cosplayPhotoCover, replacement: " " },
-        { pattern: patterns.variant, replacement: " " },
-        { pattern: patterns.limited, replacement: " Limited " },
-        { pattern: patterns.edition, replacement: " Edition " },
-        { pattern: patterns.reprint, replacement: " " },
-        { pattern: patterns.subsequentPrintingNum, replacement: " " },
         { pattern: patterns.anniversary, replacement: " Anniversary " },
-        { pattern: patterns.graphicNovel, replacement: " " },
-        { pattern: patterns.tradePaperback, replacement: " " },
-        { pattern: patterns.hardcover, replacement: " " },
-        { pattern: patterns.operatingAs, replacement: " " },
+        { pattern: patterns.blankCover, replacement: " " },
+        { pattern: patterns.collection, replacement: " Collection " },
+        { pattern: patterns.cosplayPhotoCover, replacement: " " },
+        { pattern: patterns.coverLetter, replacement: " " },
         { pattern: patterns.deluxe, replacement: " Deluxe " },
+        { pattern: patterns.edition, replacement: " Edition " },
+        { pattern: patterns.graphicNovel, replacement: " " },
+        { pattern: patterns.hardcover, replacement: " " },
+        { pattern: patterns.limited, replacement: " Limited " },
+        { pattern: patterns.mature, replacement: " " },
+        { pattern: patterns.miniSeries, replacement: " " },
+        { pattern: patterns.number, replacement: " " },
         { pattern: patterns.ofThe, replacement: " of the " },
+        { pattern: patterns.omnibus, replacement: " " },
+        { pattern: patterns.operatingAs, replacement: " " },
         { pattern: patterns.original, replacement: " Original " },
-        { pattern: patterns.years, replacement: " Years " },
-        { pattern: patterns.theNextGeneration, replacement: " The Next Generation " },
+        { pattern: patterns.reprint, replacement: " " },
+        { pattern: patterns.resolicit, replacement: " " },
         { pattern: patterns.signature, replacement: " Signature " },
+        { pattern: patterns.subsequentPrintingNum, replacement: " " },
+        { pattern: patterns.theNextGeneration, replacement: " The Next Generation " },
+        { pattern: patterns.tradePaperback, replacement: " " },
+        { pattern: patterns.trailingParentheses, replacement: " " },
+        { pattern: patterns.useOtherDiamondID, replacement: " " },
+        { pattern: patterns.variant, replacement: " " },
+        { pattern: patterns.volume, replacement: " " },
+        { pattern: patterns.years, replacement: " Years " },
     ]
 
     let cleanedTitle = title
+    cleanedTitle = removeVariantFromTitle(cleanedTitle)
     cleanedTitle = removeCreatorNamesFromTitle(cleanedTitle, creators)
+
     itemsToClean.forEach(
         (item) => (cleanedTitle = cleanedTitle.replace(item.pattern, item.replacement))
     )
-    cleanedTitle = cleanedTitle.trim()
+
     cleanedTitle = toProperCasing(cleanedTitle)
+    cleanedTitle = cleanedTitle.trim()
 
     return cleanedTitle
 }
 
-async function getCompiledComic(comic) {
-    const compiledComic = {}
+async function getParsedComic(comic) {
+    const parsedComic = {}
 
-    compiledComic.diamondID = comic.diamondID
-    compiledComic.publisher = { id: null, name: comic.publisher.name }
-    compiledComic.releaseDate = getFormattedReleaseDate(comic.releaseDate)
-    compiledComic.coverPrice = comic.coverPrice
-    compiledComic.cover = comic.cover
-    compiledComic.description = comic.description
-    compiledComic.creators = getCreatorsFromNodes(comic.creators)
-    compiledComic.format = comic.format
-    compiledComic.solicitationDate = getSolicitDateFromDiamondID(compiledComic.diamondID)
+    parsedComic.diamondID = comic.diamondID
+    parsedComic.publisher = { id: null, name: comic.publisher.name }
+    parsedComic.releaseDate = getFormattedReleaseDate(comic.releaseDate)
+    parsedComic.coverPrice = comic.coverPrice
+    parsedComic.cover = comic.coverURL
+    parsedComic.description = comic.description
+    parsedComic.creators = getParsedCreatorsFromNodes(comic.creators)
+    parsedComic.format = comic.format
+    parsedComic.solicitationDate = getSolicitDateFromDiamondID(parsedComic.diamondID)
     if (!comic.title) logger.error(`! The comic title was not found`)
     else {
-        compiledComic.title = comic.title
-        compiledComic.printingNumber = getPrintingNumberFromTitle(comic.title)
-        compiledComic.coverLetter = getCoverLetterFromTitle(comic.title)
-        compiledComic.versionOf = null
-        compiledComic.variantType = getVariantTypeFromTitle(compiledComic.title)
-        compiledComic.ageRating = compiledComic.title.match(patterns.mature) ? "MA" : ""
-        compiledComic.isMiniSeries = compiledComic.title.match(patterns.miniSeries) !== null
-        if (compiledComic.isMiniSeries)
-            compiledComic.miniSeriesLimit = getMiniSeriesLimitFromTitle(compiledComic.title)
-        else compiledComic.miniSeriesLimit = 0
-        compiledComic.isOneShot = compiledComic.title.match(patterns.oneShot) !== null
-        if (compiledComic.format !== "Comic") compiledComic.format = getFormatFromTitle(comic.title)
-        compiledComic.itemNumber = getItemNumberFromTitle(compiledComic.title, compiledComic.format)
-        compiledComic.title = getCleanedTitle(compiledComic.title, compiledComic.creators)
-        compiledComic.series = {
+        parsedComic.title = comic.title
+        parsedComic.printingNumber = getPrintingNumberFromTitle(comic.title)
+        parsedComic.coverLetter = getCoverLetterFromTitle(comic.title)
+        parsedComic.versionOf = null
+        parsedComic.variantType = getVariantTypeFromTitle(parsedComic.title)
+        parsedComic.ageRating = parsedComic.title.match(patterns.mature) ? "MA" : ""
+        parsedComic.isMiniSeries = parsedComic.title.match(patterns.miniSeries) !== null
+        if (parsedComic.isMiniSeries)
+            parsedComic.miniSeriesLimit = getMiniSeriesLimitFromTitle(parsedComic.title)
+        else parsedComic.miniSeriesLimit = 0
+        parsedComic.isOneShot = parsedComic.title.match(patterns.oneShot) !== null
+        if (parsedComic.format !== "Comic") parsedComic.format = getFormatFromTitle(comic.title)
+        parsedComic.itemNumber = getItemNumberFromTitle(parsedComic.title, parsedComic.format)
+        parsedComic.title = getCleanedTitle(parsedComic.title, parsedComic.creators)
+        parsedComic.series = {
             id: null,
             name: comic.series.link
-                ? getCleanedTitle(comic.series.name, compiledComic.creators)
-                : compiledComic.title,
+                ? getCleanedTitle(comic.series.name, parsedComic.creators)
+                : parsedComic.title,
         }
     }
+    logger.info(JSON.stringify(parsedComic, null, " "))
 
-    return compiledComic
+    return parsedComic
 }
 
-module.exports = getCompiledComic
+module.exports = getParsedComic

@@ -2,7 +2,7 @@ const $ = require("cheerio")
 const axios = require("axios")
 const sleep = require("../../utils/sleep")
 const logger = require("../../utils/logger.js")
-const getCompiledComic = require("./compile/comic.js")
+const getParsedComic = require("./parse/comic.js")
 const toProperCasing = require("../../utils/toProperCasing")
 
 const SLEEP_SECONDS = 3
@@ -60,6 +60,7 @@ async function getScrapedRelease(releaseLink, releaseFormat) {
     logger.info(`# Scraped from ${url} with title ${title}:`)
 
     const scrapedRelease = {
+        url: url,
         title: title,
         series: {
             name: seriesName,
@@ -68,7 +69,7 @@ async function getScrapedRelease(releaseLink, releaseFormat) {
         publisher: { name: toProperCasing($(".Publisher", newReleaseResponse).text()) },
         releaseDate: $(".ReleaseDate", newReleaseResponse).text().slice(10),
         coverPrice: $(".SRP", newReleaseResponse).text().slice(5),
-        cover: baseURL + $(".mainContentImage .ImageContainer", newReleaseResponse).attr("href"),
+        coverURL: baseURL + $(".mainContentImage .ImageContainer", newReleaseResponse).attr("href"),
         description: $("div.Text", newReleaseResponse)
             .first()
             .contents()
@@ -83,21 +84,50 @@ async function getScrapedRelease(releaseLink, releaseFormat) {
         format: releaseFormat === 1 ? "Comic" : "",
     }
 
-    const compiledComic = await getCompiledComic(scrapedRelease)
-    logger.info(JSON.stringify(compiledComic, null, " "))
-    logger.info(`# Finished new release from ${url}`)
+    return scrapedRelease
+}
 
-    return compiledComic
+function filterOutReleasesWithFlaggedPublishers(releases) {
+    const flaggedPublishers = [
+        "Viz LLC",
+        "Dynamic Forces",
+        "Kodansha",
+        "One Peace Books",
+        "J-Novel Club",
+        "Tokyopop",
+        "Seven Seas Entertainment LLC",
+        "J-Novel Heart",
+        "Tohan Corporation",
+        "Yen On",
+        "Yen Press",
+        "Digital Manga Distribution",
+        "Square Enix Manga",
+        "Ghost Ship",
+    ]
+
+    const filteredReleases = releases.filter(
+        (release) => flaggedPublishers.includes(release.publisher) === false
+    )
+
+    logger.info(`Filtered out ${filteredReleases.length} releases with flagged publishers.`)
+
+    return filteredReleases
 }
 
 async function getScrapedPreviewsWorldReleases() {
     logger.info(`# Started retrieving Previews World new releases`)
 
-    const releases = []
     const scrapedLinksAndFormats = await getScrapedReleaseLinksAndFormats()
-    for (const [index, { link, format }] of scrapedLinksAndFormats.entries()) {
-        logger.info(`# Release ${index + 1} of ${scrapedLinksAndFormats.length}`)
-        releases.push(await getScrapedRelease(link, format))
+    const scrapedReleases = []
+    for (const { link, format } of scrapedLinksAndFormats)
+        scrapedReleases.push(await getScrapedRelease(link, format))
+
+    const filteredScrapedReleases = filterOutReleasesWithFlaggedPublishers(scrapedReleases)
+    const releases = []
+    for (const [index, release] of filteredScrapedReleases.entries()) {
+        logger.info(`# Release ${index + 1} of ${filteredScrapedReleases.length}`)
+        releases.push(await getParsedComic(release))
+        logger.info(`# Finished new release from ${release.url}`)
     }
 
     logger.info(`# Finished retrieving Previews World new releases`)
