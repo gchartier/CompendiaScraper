@@ -5,7 +5,7 @@ const logger = require("../../utils/logger.js")
 const getParsedComic = require("./parse/comic.js")
 const toProperCasing = require("../../utils/toProperCasing")
 
-const SLEEP_SECONDS = 3
+const SLEEP_SECONDS = 4
 
 async function getScrapedReleaseLinksAndFormats() {
     const newReleasesURL = "https://www.previewsworld.com/NewReleases"
@@ -33,6 +33,7 @@ async function getScrapedReleaseLinksAndFormats() {
 }
 
 async function getScrapedSeriesName(seriesLink) {
+    logger.info(`# Requesting series from ${seriesLink}`)
     await sleep(SLEEP_SECONDS)
     const { data: seriesNameHTML } = await axios.get(seriesLink)
     if (!seriesNameHTML)
@@ -45,7 +46,7 @@ async function getScrapedRelease(releaseLink, releaseFormat) {
     const baseURL = "https://www.previewsworld.com"
     const url = `${baseURL}${releaseLink}`
 
-    logger.info(`# Getting new release from ${url}`)
+    logger.info(`# Requesting release from ${url}`)
     await sleep(SLEEP_SECONDS)
     const { data: newReleaseResponse } = await axios.get(url)
 
@@ -57,7 +58,7 @@ async function getScrapedRelease(releaseLink, releaseFormat) {
             "! Could not retrieve series name from series link. Series name will be retrieved from title."
         )
 
-    logger.info(`# Scraped from ${url} with title ${title}:`)
+    logger.info(`# Scraped ${url} with title ${title}:`)
 
     const scrapedRelease = {
         url: url,
@@ -109,7 +110,11 @@ function filterOutReleasesWithFlaggedPublishers(releases) {
         (release) => flaggedPublishers.includes(release.publisher) === false
     )
 
-    logger.info(`Filtered out ${filteredReleases.length} releases with flagged publishers.`)
+    logger.info(
+        `Filtered out ${
+            releases.length - filteredReleases.length
+        } releases with flagged publishers.`
+    )
 
     return filteredReleases
 }
@@ -125,6 +130,7 @@ async function getScrapedPreviewsWorldReleases() {
     const filteredScrapedReleases = filterOutReleasesWithFlaggedPublishers(scrapedReleases)
     const releases = []
     for (const [index, release] of filteredScrapedReleases.entries()) {
+        await sleep(1)
         logger.info(`# Release ${index + 1} of ${filteredScrapedReleases.length}`)
         releases.push(await getParsedComic(release))
         logger.info(`# Finished new release from ${release.url}`)

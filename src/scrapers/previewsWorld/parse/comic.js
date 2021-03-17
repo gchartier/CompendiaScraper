@@ -306,7 +306,7 @@ function removeVariantFromTitle(title) {
             .map((word) => ` ${word} `)
     }
 
-    function isCoverLetter(word, index, words) {
+    function isCoverLetter({ word, index, words }) {
         return (
             word.match(patterns.letter) &&
             index < words.length - 1 &&
@@ -314,11 +314,39 @@ function removeVariantFromTitle(title) {
         )
     }
 
-    function isFormatNumber(word) {
-        return word.match(patterns.number)
+    function isSubsequentPrinting({ word, index, words }) {
+        return (
+            word.match(patterns.printing) &&
+            index < words.length - 1 &&
+            words[index + 1].match(patterns.printingNum)
+        )
     }
 
-    function isMiniSeries(word, index, words) {
+    function isReprint({ word, index, words }) {
+        return (
+            word.match(patterns.reprintPrinting) &&
+            index < words.length - 1 &&
+            words[index + 1].match(patterns.reprintNew)
+        )
+    }
+
+    function isFormatNumber({ word, index, words }) {
+        return (
+            word.match(patterns.number) ||
+            (word.match(patterns.formatNumber) &&
+                index < words.length - 1 &&
+                words[index + 1].match(patterns.formatType))
+        )
+    }
+
+    function isFormat({ word }) {
+        logger.warn(
+            "! Variant found in title stopped at a format. There may be an issue with the title."
+        )
+        return word.match(patterns.formatType)
+    }
+
+    function isMiniSeries({ word, index, words }) {
         return (
             word.match(patterns.miniSeriesNumber) &&
             index < words.length - 1 &&
@@ -327,11 +355,22 @@ function removeVariantFromTitle(title) {
     }
 
     function isEndOfVariantString(word, index, words) {
+        const searchDetails = { word, index, words }
         return (
-            isCoverLetter(word, index, words) !== null ||
-            isFormatNumber(word) !== null ||
-            isMiniSeries(word, index, words) !== null
+            isCoverLetter(searchDetails) !== null ||
+            isFormatNumber(searchDetails) !== null ||
+            isMiniSeries(searchDetails) !== null ||
+            isReprint(searchDetails) !== null ||
+            isSubsequentPrinting(searchDetails) !== null ||
+            isFormat(searchDetails) !== null
         )
+    }
+
+    function getVariantSegmentOfTitle(words) {
+        return ` ${words
+            .reverse()
+            .map((word) => word.trim())
+            .join(" ")} `
     }
 
     let cleanedTitle = title
@@ -342,28 +381,24 @@ function removeVariantFromTitle(title) {
         let foundVariant = false
         words.forEach((word) => {
             if (word.match(patterns.variant)) foundVariant = true
-
             if (foundVariant) titleWordsStartingWithVariant.push(word)
         })
 
-        console.log(titleWordsStartingWithVariant)
-
-        const wordsToRemoveFromTitle = []
+        const variantWords = []
         let isEndFound = false
         titleWordsStartingWithVariant.forEach((word, index, words) => {
             if (!isEndFound) {
                 if (isEndOfVariantString(word, index, words)) {
-                    console.log(word)
                     isEndFound = true
-                } else wordsToRemoveFromTitle.push(word)
+                } else variantWords.push(word)
             }
         })
-        const titleStringToReplace = ` ${wordsToRemoveFromTitle
-            .reverse()
-            .map((word) => word.trim())
-            .join(" ")} `
-        cleanedTitle = cleanedTitle.replace(titleStringToReplace, " ")
+        const variantSegment = getVariantSegmentOfTitle(variantWords)
+        cleanedTitle = cleanedTitle.replace(variantSegment, " ")
     }
+
+    if (cleanedTitle.length < 1)
+        logger.error("! Title was cleared in error when attempting to remove the variant from it.")
 
     return cleanedTitle
 }
@@ -435,6 +470,7 @@ function getCleanedTitle(title, creators) {
 }
 
 async function getParsedComic(comic) {
+    logger.info(`# Parsing ${comic.title} scraped from ${comic.url}`)
     const parsedComic = {}
 
     parsedComic.diamondID = comic.diamondID
