@@ -10,6 +10,7 @@ const patterns = {
     cosplayPhotoCover: / COSPLAY PHOTO (CVR|COVER) /i,
     cover: / (CVR|CV) /i,
     coverArtist: /\(CA\)/i,
+    coverAsEnd: / (CVR|CV) $/i,
     coverLetter: / CVR [A-Z] /i,
     deluxe: / DLX /i,
     directMarket: / DM /i,

@@ -136,7 +136,7 @@ async function getScrapedPreviewsWorldReleases() {
     for (const [index, release] of filteredScrapedReleases.entries()) {
         await sleep(1)
         logger.info(`# Release ${index + 1} of ${filteredScrapedReleases.length}`)
-        releases.push(await getParsedComic(release))
+        releases.push(getParsedComic(release))
         logger.info(`# Finished new release from ${release.url}`)
     }
 

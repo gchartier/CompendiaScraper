@@ -29,14 +29,14 @@ function toProperCasing(str) {
         "With",
     ]
     for (i = 0, j = lowers.length; i < j; i++)
-        str = str.replace(new RegExp("\\s" + lowers[i] + "\\s", "g"), function (txt) {
+        str = str.replace(new RegExp("\\s" + lowers[i] + "\\s", "ig"), function (txt) {
             return txt.toLowerCase()
         })
 
     // Certain words such as initialisms or acronyms should be left uppercase
-    uppers = ["Id", "Tv", "B&W", "bprd", "tmnt"]
+    uppers = ["ID", "TV", "B&W", "BPRD", "TMNT", "CGC"]
     for (i = 0, j = uppers.length; i < j; i++)
-        str = str.replace(new RegExp("\\b" + uppers[i] + "\\b", "g"), uppers[i].toUpperCase())
+        str = str.replace(new RegExp("\\b" + uppers[i] + "\\b", "ig"), uppers[i].toUpperCase())
 
     // Make roman numerals uppercase
     str = str.replace(

@@ -297,13 +297,20 @@ function getVariantTypeFromTitle(title) {
     return variantTypes.length < 1 ? null : variantTypes[0]
 }
 
-function getVariantDescriptionFromTitle(title) {
-    function getTitleAsReversedArrayOfPaddedWords(title) {
+function getSegmentFromTitle(title, segmentDelimiterPattern) {
+    function getTitleAsReversedPaddedArray(title) {
         return title
             .split(" ")
             .reverse()
             .filter((word) => word !== "")
             .map((word) => ` ${word} `)
+    }
+
+    function getStringFromReversedPaddedArray(words) {
+        return ` ${words
+            .reverse()
+            .map((word) => word.trim())
+            .join(" ")} `
     }
 
     function isCoverLetter({ word, index, words }) {
@@ -351,7 +358,7 @@ function getVariantDescriptionFromTitle(title) {
         )
     }
 
-    function isEndOfVariantString(word, index, words) {
+    function isEndOfTitleSegment(word, index, words) {
         const searchDetails = { word, index, words }
         return (
             isCoverLetter(searchDetails) !== null ||
@@ -363,37 +370,76 @@ function getVariantDescriptionFromTitle(title) {
         )
     }
 
-    function getVariantSegmentOfTitle(words) {
-        return ` ${words
-            .reverse()
-            .map((word) => word.trim())
-            .join(" ")} `
-    }
+    const words = getTitleAsReversedPaddedArray(title)
+    const titleWordsStartingWithDelimiter = []
+    let foundDelimiter = false
+    words.forEach((word) => {
+        if (word.match(segmentDelimiterPattern)) foundDelimiter = true
+        if (foundDelimiter) titleWordsStartingWithDelimiter.push(word)
+    })
 
-    let variantDescription = ""
-    if (title.match(patterns.variant)) {
-        const words = getTitleAsReversedArrayOfPaddedWords(title)
+    const segmentWords = []
+    let isEndFound = false
+    titleWordsStartingWithDelimiter.forEach((word, index, words) => {
+        if (!isEndFound) {
+            if (isEndOfTitleSegment(word, index, words)) isEndFound = true
+            else segmentWords.push(word)
+        }
+    })
 
-        const titleWordsStartingWithVariant = []
-        let foundVariant = false
-        words.forEach((word) => {
-            if (word.match(patterns.variant)) foundVariant = true
-            if (foundVariant) titleWordsStartingWithVariant.push(word)
-        })
+    return getStringFromReversedPaddedArray(segmentWords)
+}
 
-        const variantWords = []
-        let isEndFound = false
-        titleWordsStartingWithVariant.forEach((word, index, words) => {
-            if (!isEndFound) {
-                if (isEndOfVariantString(word, index, words)) {
-                    isEndFound = true
-                } else variantWords.push(word)
-            }
-        })
-        variantDescription = getVariantSegmentOfTitle(variantWords)
-    }
+function getDescriptionsFromTitle(title) {
+    const descriptions = []
+    if (title.match(patterns.variant))
+        descriptions.push(getSegmentFromTitle(title, patterns.variant))
+    if (title.match(patterns.coverAsEnd))
+        descriptions.push(getSegmentFromTitle(title, patterns.cover))
 
-    return variantDescription
+    if (descriptions.length > 1)
+        logger.warn(
+            "! Multiple descriptions were found. May need to clean up returned variant description."
+        )
+
+    return descriptions
+}
+
+function getCleanedVariantDescription(descriptions) {
+    const itemsToClean = [
+        { pattern: patterns.adventure, replacement: " Adventure " },
+        { pattern: patterns.anniversary, replacement: " Anniversary " },
+        { pattern: patterns.blackAndWhite, replacement: " Black & White " },
+        { pattern: patterns.collection, replacement: " Collection " },
+        { pattern: patterns.cover, replacement: " Cover " },
+        { pattern: patterns.directMarket, replacement: " Direct Market " },
+        { pattern: patterns.deluxe, replacement: " Deluxe " },
+        { pattern: patterns.edition, replacement: " Edition " },
+        { pattern: patterns.editionWithParen, replacement: " Edition) " },
+        { pattern: patterns.kingInBlack, replacement: " King in Black " },
+        { pattern: patterns.limited, replacement: " Limited " },
+        { pattern: patterns.ofThe, replacement: " of the " },
+        { pattern: patterns.original, replacement: " Original " },
+        { pattern: patterns.r, replacement: " " },
+        { pattern: patterns.signature, replacement: " Signature " },
+        { pattern: patterns.trailingParentheses, replacement: " " },
+        { pattern: patterns.variant, replacement: " Variant " },
+        { pattern: patterns.years, replacement: " Years " },
+    ]
+
+    const descriptions = []
+    descriptions.forEach((description) => {
+        let newDescription = description
+        newDescription = ` ${newDescription} `
+        itemsToClean.forEach(
+            (item) => (newDescription = newDescription.replace(item.pattern, item.replacement))
+        )
+        newDescription = toProperCasing(newDescription)
+        newDescription = newDescription.trim()
+        descriptions.push(newDescription)
+    })
+
+    return descriptions.join("; ")
 }
 
 function getTitleWithoutCreatorNames(title, creators) {
@@ -416,7 +462,7 @@ function getTitleWithoutCreatorNames(title, creators) {
     return cleanedTitle
 }
 
-function getCleanedTitle(title, variantDescription) {
+function getCleanedTitle(title, descriptions) {
     const itemsToClean = [
         { pattern: patterns.adventure, replacement: " Adventure " },
         { pattern: patterns.anniversary, replacement: " Anniversary " },
@@ -457,10 +503,10 @@ function getCleanedTitle(title, variantDescription) {
     ]
 
     let cleanedTitle = title
+    descriptions.forEach((description) => (cleanedTitle = cleanedTitle.replace(description, " ")))
     itemsToClean.forEach(
         (item) => (cleanedTitle = cleanedTitle.replace(item.pattern, item.replacement))
     )
-    cleanedTitle = cleanedTitle.replace(variantDescription, " ")
     cleanedTitle = toProperCasing(cleanedTitle)
     cleanedTitle = cleanedTitle.trim()
 
@@ -499,9 +545,10 @@ function getParsedComic(comic) {
         parsedComic.isOneShot = parsedComic.title.match(patterns.oneShot) !== null
         if (parsedComic.format !== "Comic") parsedComic.format = getFormatFromTitle(comic.title)
         parsedComic.itemNumber = getItemNumberFromTitle(parsedComic.title, parsedComic.format)
-        parsedComic.variantDescription = getVariantDescriptionFromTitle(parsedComic.title)
+        parsedComic.descriptions = getDescriptionsFromTitle(parsedComic.title)
+        parsedComic.variantDescription = getCleanedVariantDescription(parsedComic.descriptions)
         parsedComic.title = getTitleWithoutCreatorNames(parsedComic.title, parsedComic.creators)
-        parsedComic.title = getCleanedTitle(parsedComic.title, parsedComic.variantDescription)
+        parsedComic.title = getCleanedTitle(parsedComic.title, parsedComic.descriptions)
         parsedComic.series = {
             id: null,
         }
@@ -513,7 +560,7 @@ function getParsedComic(comic) {
             )
             parsedComic.series.name = getCleanedTitle(
                 parsedComic.series.name,
-                parsedComic.variantDescription
+                parsedComic.descriptions
             )
         } else parsedComic.series.name = parsedComic.title
     }
