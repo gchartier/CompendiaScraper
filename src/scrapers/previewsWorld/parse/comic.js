@@ -297,7 +297,7 @@ function getVariantTypeFromTitle(title) {
     return variantTypes.length < 1 ? null : variantTypes[0]
 }
 
-function removeVariantFromTitle(title) {
+function getVariantDescriptionFromTitle(title) {
     function getTitleAsReversedArrayOfPaddedWords(title) {
         return title
             .split(" ")
@@ -340,9 +340,6 @@ function removeVariantFromTitle(title) {
     }
 
     function isFormat({ word }) {
-        logger.warn(
-            "! Variant found in title stopped at a format. There may be an issue with the title."
-        )
         return word.match(patterns.formatType)
     }
 
@@ -373,9 +370,9 @@ function removeVariantFromTitle(title) {
             .join(" ")} `
     }
 
-    let cleanedTitle = title
+    let variantDescription = ""
     if (title.match(patterns.variant)) {
-        const words = getTitleAsReversedArrayOfPaddedWords(cleanedTitle)
+        const words = getTitleAsReversedArrayOfPaddedWords(title)
 
         const titleWordsStartingWithVariant = []
         let foundVariant = false
@@ -393,17 +390,13 @@ function removeVariantFromTitle(title) {
                 } else variantWords.push(word)
             }
         })
-        const variantSegment = getVariantSegmentOfTitle(variantWords)
-        cleanedTitle = cleanedTitle.replace(variantSegment, " ")
+        variantDescription = getVariantSegmentOfTitle(variantWords)
     }
 
-    if (cleanedTitle.length < 1)
-        logger.error("! Title was cleared in error when attempting to remove the variant from it.")
-
-    return cleanedTitle
+    return variantDescription
 }
 
-function removeCreatorNamesFromTitle(title, creators) {
+function getTitleWithoutCreatorNames(title, creators) {
     let cleanedTitle = title
     const coverLetterMatch = title.match(patterns.coverLetter)
 
@@ -414,8 +407,8 @@ function removeCreatorNamesFromTitle(title, creators) {
             return acc
         }, [])
         const joinedNames = creatorNames.join("|")
-        const creatorNameWithAmpRegex = new RegExp(` CVR [A-Z] ${joinedNames} & [A-Z]+ `, "gi")
-        const creatorNameRegex = new RegExp(` CVR [A-Z] ${joinedNames}`, "gi")
+        const creatorNameWithAmpRegex = new RegExp(` CVR [A-Z] (${joinedNames}) & [A-Z]+ `, "gi")
+        const creatorNameRegex = new RegExp(` CVR [A-Z] (${joinedNames})`, "gi")
         cleanedTitle = cleanedTitle.replace(creatorNameWithAmpRegex, " ")
         cleanedTitle = cleanedTitle.replace(creatorNameRegex, " ")
     }
@@ -423,25 +416,33 @@ function removeCreatorNamesFromTitle(title, creators) {
     return cleanedTitle
 }
 
-function getCleanedTitle(title, creators) {
+function getCleanedTitle(title, variantDescription) {
     const itemsToClean = [
+        { pattern: patterns.adventure, replacement: " Adventure " },
         { pattern: patterns.anniversary, replacement: " Anniversary " },
+        { pattern: patterns.blackAndWhite, replacement: " " },
         { pattern: patterns.blankCover, replacement: " " },
         { pattern: patterns.collection, replacement: " Collection " },
         { pattern: patterns.cosplayPhotoCover, replacement: " " },
         { pattern: patterns.coverLetter, replacement: " " },
+        { pattern: patterns.directMarket, replacement: " " },
         { pattern: patterns.deluxe, replacement: " Deluxe " },
         { pattern: patterns.edition, replacement: " Edition " },
+        { pattern: patterns.editionWithParen, replacement: " Edition) " },
         { pattern: patterns.graphicNovel, replacement: " " },
         { pattern: patterns.hardcover, replacement: " " },
+        { pattern: patterns.kingInBlack, replacement: " King in Black " },
         { pattern: patterns.limited, replacement: " Limited " },
         { pattern: patterns.mature, replacement: " " },
         { pattern: patterns.miniSeries, replacement: " " },
+        { pattern: patterns.net, replacement: " " },
         { pattern: patterns.number, replacement: " " },
         { pattern: patterns.ofThe, replacement: " of the " },
         { pattern: patterns.omnibus, replacement: " " },
+        { pattern: patterns.oneShot, replacement: " " },
         { pattern: patterns.operatingAs, replacement: " " },
         { pattern: patterns.original, replacement: " Original " },
+        { pattern: patterns.r, replacement: " " },
         { pattern: patterns.reprint, replacement: " " },
         { pattern: patterns.resolicit, replacement: " " },
         { pattern: patterns.signature, replacement: " Signature " },
@@ -456,20 +457,21 @@ function getCleanedTitle(title, creators) {
     ]
 
     let cleanedTitle = title
-    cleanedTitle = removeVariantFromTitle(cleanedTitle)
-    cleanedTitle = removeCreatorNamesFromTitle(cleanedTitle, creators)
-
     itemsToClean.forEach(
         (item) => (cleanedTitle = cleanedTitle.replace(item.pattern, item.replacement))
     )
-
+    cleanedTitle = cleanedTitle.replace(variantDescription, " ")
     cleanedTitle = toProperCasing(cleanedTitle)
     cleanedTitle = cleanedTitle.trim()
+
+    if (cleanedTitle.length < 1) logger.error(`! Title is missing.`)
+    if (cleanedTitle.match(/\s{2,}/gi))
+        logger.error(`! Found extra space in title indicating an error in title parsing.`)
 
     return cleanedTitle
 }
 
-async function getParsedComic(comic) {
+function getParsedComic(comic) {
     logger.info(`# Parsing ${comic.title} scraped from ${comic.url}`)
     const parsedComic = {}
 
@@ -497,13 +499,23 @@ async function getParsedComic(comic) {
         parsedComic.isOneShot = parsedComic.title.match(patterns.oneShot) !== null
         if (parsedComic.format !== "Comic") parsedComic.format = getFormatFromTitle(comic.title)
         parsedComic.itemNumber = getItemNumberFromTitle(parsedComic.title, parsedComic.format)
-        parsedComic.title = getCleanedTitle(parsedComic.title, parsedComic.creators)
+        parsedComic.variantDescription = getVariantDescriptionFromTitle(parsedComic.title)
+        parsedComic.title = getTitleWithoutCreatorNames(parsedComic.title, parsedComic.creators)
+        parsedComic.title = getCleanedTitle(parsedComic.title, parsedComic.variantDescription)
         parsedComic.series = {
             id: null,
-            name: comic.series.link
-                ? getCleanedTitle(comic.series.name, parsedComic.creators)
-                : parsedComic.title,
         }
+        if (comic.series.link) {
+            parsedComic.series.name = comic.series.name
+            parsedComic.series.name = getTitleWithoutCreatorNames(
+                parsedComic.series.name,
+                parsedComic.creators
+            )
+            parsedComic.series.name = getCleanedTitle(
+                parsedComic.series.name,
+                parsedComic.variantDescription
+            )
+        } else parsedComic.series.name = parsedComic.title
     }
     logger.info(JSON.stringify(parsedComic, null, " "))
 

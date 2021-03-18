@@ -90,24 +90,28 @@ async function getScrapedRelease(releaseLink, releaseFormat) {
 
 function filterOutReleasesWithFlaggedPublishers(releases) {
     const flaggedPublishers = [
-        "Viz LLC",
-        "Dynamic Forces",
-        "Kodansha",
-        "One Peace Books",
-        "J-Novel Club",
-        "Tokyopop",
-        "Seven Seas Entertainment LLC",
-        "J-Novel Heart",
-        "Tohan Corporation",
-        "Yen On",
-        "Yen Press",
-        "Digital Manga Distribution",
-        "Square Enix Manga",
-        "Ghost Ship",
+        "DIGITAL MANGA DISTRIBUTION",
+        "DYNAMIC FORCES",
+        "GHOST SHIP",
+        "J-NOVEL CLUB",
+        "J-NOVEL HEART",
+        "KODANSHA AMERICA",
+        "KODANSHA COMICS",
+        "ONE PEACE BOOKS",
+        "SEVEN SEAS ENTERTAINMENT LLC",
+        "SQUARE ENIX MANGA",
+        "SUBLIME",
+        "TOHAN CORPORATION",
+        "TOKYOPOP",
+        "UDON ENTERTAINMENT INC",
+        "VERTICAL COMICS",
+        "VIZ LLC",
+        "YEN ON",
+        "YEN PRESS",
     ]
 
     const filteredReleases = releases.filter(
-        (release) => flaggedPublishers.includes(release.publisher) === false
+        (release) => flaggedPublishers.includes(release.publisher.toUpperCase()) === false
     )
 
     logger.info(
