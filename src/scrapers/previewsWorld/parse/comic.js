@@ -78,6 +78,14 @@ function getItemNumberFromTitle(title, format) {
             format: "Comic",
             numberMatches: [
                 {
+                    name: "Season Issue",
+                    isMatchOf: (title) => title.match(patterns.season) !== null,
+                    getNumber: (title) => {
+                        const number = title.match(patterns.season).toString()
+                        return number.substring(1, number.length - 1)
+                    },
+                },
+                {
                     name: "Standard Issue",
                     isMatchOf: (title) => title.match(patterns.number) !== null,
                     getNumber: (title) => {
@@ -253,19 +261,25 @@ function getItemNumberFromTitle(title, format) {
         },
     ]
 
+    function isException(itemNumbers, format) {
+        const isSeason =
+            format === "Comic" &&
+            itemNumbers.find((num) => ` ${num} `.match(patterns.season) !== null)
+        return isSeason
+    }
+
     const itemNumbers = []
     numberMatchesByFormat.forEach((matchesByFormat) => {
-        if (format === matchesByFormat.format) {
+        if (format === matchesByFormat.format)
             matchesByFormat.numberMatches.forEach((numberMatch) => {
                 if (numberMatch.isMatchOf(title)) itemNumbers.push(numberMatch.getNumber(title))
             })
-        }
     })
 
     if (itemNumbers.length === 0) {
-        logger.warn("! Item number not found from title. Setting as blank.")
+        loggger.warn("! Item number not found from title. Setting as blank.")
         itemNumbers.push("")
-    } else if (itemNumbers.length > 1)
+    } else if (itemNumbers.length > 1 && isException(itemNumbers, format) === false)
         logger.error("! More than one item number match was found from the title.")
 
     return itemNumbers[0].replace(patterns.leadingZeros, "")
@@ -494,6 +508,7 @@ function getCleanedTitle(title, descriptions, creators) {
         { pattern: patterns.r, replacement: " " },
         { pattern: patterns.reprint, replacement: " " },
         { pattern: patterns.resolicit, replacement: " " },
+        { pattern: patterns.season, replacement: " " },
         { pattern: patterns.signature, replacement: " Signature " },
         { pattern: patterns.softcover, replacement: " " },
         { pattern: patterns.subsequentPrintingNum, replacement: " " },
