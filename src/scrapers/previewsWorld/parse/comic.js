@@ -50,6 +50,7 @@ function getFormatFromTitle(title) {
     else if (title.match(patterns.omnibus)) format = "Omnibus"
     else if (title.match(patterns.tradePaperback)) format = "Trade Paperback"
     else if (title.match(patterns.hardcover)) format = "Hardcover"
+    else if (title.match(patterns.softcover)) format = "Softcover"
     else format = "Comic"
 
     return format
@@ -427,7 +428,7 @@ function getCleanedVariantDescription(descriptions) {
         { pattern: patterns.years, replacement: " Years " },
     ]
 
-    const descriptions = []
+    const cleanedDescriptions = []
     descriptions.forEach((description) => {
         let newDescription = description
         newDescription = ` ${newDescription} `
@@ -436,13 +437,13 @@ function getCleanedVariantDescription(descriptions) {
         )
         newDescription = toProperCasing(newDescription)
         newDescription = newDescription.trim()
-        descriptions.push(newDescription)
+        cleanedDescriptions.push(newDescription)
     })
 
-    return descriptions.join("; ")
+    return cleanedDescriptions.join("; ")
 }
 
-function getTitleWithoutCreatorNames(title, creators) {
+function getTitleWithoutCoverLetterSegment(title, creators) {
     let cleanedTitle = title
     const coverLetterMatch = title.match(patterns.coverLetter)
 
@@ -453,16 +454,18 @@ function getTitleWithoutCreatorNames(title, creators) {
             return acc
         }, [])
         const joinedNames = creatorNames.join("|")
-        const creatorNameWithAmpRegex = new RegExp(` CVR [A-Z] (${joinedNames}) & [A-Z]+ `, "gi")
-        const creatorNameRegex = new RegExp(` CVR [A-Z] (${joinedNames})`, "gi")
+        const creatorNameWithAmpRegex = new RegExp(
+            ` CVR [A-Z] (((${joinedNames}) )+)& (((${joinedNames}) )+)`,
+            "gi"
+        )
+        const creatorNameRegex = new RegExp(` CVR [A-Z] (((${joinedNames}) )+)`, "gi")
         cleanedTitle = cleanedTitle.replace(creatorNameWithAmpRegex, " ")
         cleanedTitle = cleanedTitle.replace(creatorNameRegex, " ")
     }
-
     return cleanedTitle
 }
 
-function getCleanedTitle(title, descriptions) {
+function getCleanedTitle(title, descriptions, creators) {
     const itemsToClean = [
         { pattern: patterns.adventure, replacement: " Adventure " },
         { pattern: patterns.anniversary, replacement: " Anniversary " },
@@ -492,6 +495,7 @@ function getCleanedTitle(title, descriptions) {
         { pattern: patterns.reprint, replacement: " " },
         { pattern: patterns.resolicit, replacement: " " },
         { pattern: patterns.signature, replacement: " Signature " },
+        { pattern: patterns.softcover, replacement: " " },
         { pattern: patterns.subsequentPrintingNum, replacement: " " },
         { pattern: patterns.theNextGeneration, replacement: " The Next Generation " },
         { pattern: patterns.tradePaperback, replacement: " " },
@@ -504,6 +508,7 @@ function getCleanedTitle(title, descriptions) {
 
     let cleanedTitle = title
     descriptions.forEach((description) => (cleanedTitle = cleanedTitle.replace(description, " ")))
+    cleanedTitle = getTitleWithoutCoverLetterSegment(cleanedTitle, creators)
     itemsToClean.forEach(
         (item) => (cleanedTitle = cleanedTitle.replace(item.pattern, item.replacement))
     )
@@ -547,14 +552,17 @@ function getParsedComic(comic) {
         parsedComic.itemNumber = getItemNumberFromTitle(parsedComic.title, parsedComic.format)
         parsedComic.descriptions = getDescriptionsFromTitle(parsedComic.title)
         parsedComic.variantDescription = getCleanedVariantDescription(parsedComic.descriptions)
-        parsedComic.title = getTitleWithoutCreatorNames(parsedComic.title, parsedComic.creators)
-        parsedComic.title = getCleanedTitle(parsedComic.title, parsedComic.descriptions)
+        parsedComic.title = getCleanedTitle(
+            parsedComic.title,
+            parsedComic.descriptions,
+            parsedComic.creators
+        )
         parsedComic.series = {
             id: null,
         }
         if (comic.series.link) {
             parsedComic.series.name = comic.series.name
-            parsedComic.series.name = getTitleWithoutCreatorNames(
+            parsedComic.series.name = getTitleWithoutCoverLetterSegment(
                 parsedComic.series.name,
                 parsedComic.creators
             )
