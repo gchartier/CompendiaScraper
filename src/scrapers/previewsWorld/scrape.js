@@ -51,7 +51,7 @@ async function getScrapedRelease(releaseLink, releaseFormat) {
     const { data: newReleaseResponse } = await axios.get(url)
 
     const title = " " + $(".Title", newReleaseResponse).text() + " "
-    const seriesLink = $(".ViewSeriesItemsLink", newReleaseResponse).attr("href")
+    const seriesLink = null //TODO uncomment $(".ViewSeriesItemsLink", newReleaseResponse).attr("href")
     const seriesName = seriesLink ? ` ${await getScrapedSeriesName(baseURL + seriesLink)} ` : ""
     if (!seriesLink)
         logger.warn(
@@ -111,7 +111,7 @@ function filterOutReleasesWithFlaggedPublishers(releases) {
     ]
 
     const filteredReleases = releases.filter(
-        (release) => flaggedPublishers.includes(release.publisher.toUpperCase()) === false
+        (release) => flaggedPublishers.includes(release.publisher.name.toUpperCase()) === false
     )
 
     logger.info(
