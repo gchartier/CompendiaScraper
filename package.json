@@ -5,8 +5,8 @@
     "main": "src/scrapers/index.js",
     "scripts": {
         "start": "node src/scrapers/index.js",
-        "start-watch": "nodemon src/scrapers/index.js",
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "test": "node src/scrapers/previewsWorld/test/manualTest.js",
+        "start-watch": "nodemon src/scrapers/index.js"
     },
     "keywords": [],
     "author": "Gabriel Chartier",

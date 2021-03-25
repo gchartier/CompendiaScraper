@@ -5,6 +5,13 @@ const getParsedCreatorsFromNodes = require("./creator.js")
 const toProperCasing = require("../../../utils/toProperCasing.js")
 const getMonthFromAbbreviation = require("../../../utils/getMonth.js")
 
+function getPublisher(publisher) {
+    if (!publisher)
+        logger.error("! No publisher found from parsed data. Manual addition of publisher needed.")
+
+    return { id: null, name: publisher && publisher.name ? publisher.name : "" }
+}
+
 function getSolicitDateFromDiamondID(diamondID) {
     let solicitationDate = ""
     if (!diamondID || diamondID.length < 5)
@@ -38,7 +45,11 @@ function getPrintingNumberFromTitle(title) {
 }
 
 function getFormattedReleaseDate(dateString) {
-    return format(new Date(dateString), "yyyy-MM-dd")
+    if (!dateString) logger.error("! No release date found from parsed data, using today's date.")
+
+    return dateString
+        ? format(new Date(dateString), "yyyy-MM-dd")
+        : format(new Date(), "yyyy-MM-dd")
 }
 
 function getFormatFromTitle(title) {
@@ -616,11 +627,13 @@ function getParsedComic(comic) {
     const parsedComic = {}
 
     parsedComic.diamondID = comic.diamondID
-    parsedComic.publisher = { id: null, name: comic.publisher.name }
+    parsedComic.publisher = getPublisher(comic.publisher)
     parsedComic.releaseDate = getFormattedReleaseDate(comic.releaseDate)
     parsedComic.coverPrice = comic.coverPrice
     parsedComic.cover = comic.coverURL
     parsedComic.description = comic.description
+    parsedComic.unparsedCreators = comic.creators
+    parsedComic.unparsedTitle = comic.title
     parsedComic.creators = getParsedCreatorsFromNodes(comic.creators)
     parsedComic.format = comic.format
     parsedComic.solicitationDate = getSolicitDateFromDiamondID(parsedComic.diamondID)
@@ -674,7 +687,7 @@ function getParsedComic(comic) {
         parsedComic.series = {
             id: null,
         }
-        if (comic.series.link) {
+        if (comic.series && comic.series.link) {
             parsedComic.series.name = comic.series.name
             //TODO finish cleaning this
         } else parsedComic.series.name = parsedComic.title
