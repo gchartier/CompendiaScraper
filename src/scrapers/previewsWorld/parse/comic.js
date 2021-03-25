@@ -12,6 +12,10 @@ function getPublisher(publisher) {
     return { id: null, name: publisher && publisher.name ? publisher.name : "" }
 }
 
+function prepareTitleForParsing(title) {
+    return ` ${title.replace(patterns.spacesBeginningAndEnd, "").replace(patterns.spaces, " ")} `
+}
+
 function getSolicitDateFromDiamondID(diamondID) {
     let solicitationDate = ""
     if (!diamondID || diamondID.length < 5)
@@ -97,9 +101,19 @@ function getItemNumberFromTitle(title, format) {
             format: "Comic",
             numberMatches: [
                 {
+                    name: "Volume Number",
+                    isMatchOf: (title) => title.match(patterns.volumeWithNums) !== null,
+                    getNumber: (title) => getCleanedItemNumber(title, patterns.volumeWithNums),
+                },
+                {
                     name: "Season Issue",
                     isMatchOf: (title) => title.match(patterns.season) !== null,
                     getNumber: (title) => getCleanedItemNumber(title, patterns.season),
+                },
+                {
+                    name: "Prog",
+                    isMatchOf: (title) => title.match(patterns.progWithNum) !== null,
+                    getNumber: (title) => getCleanedItemNumber(title, patterns.progWithNum),
                 },
                 {
                     name: "Standard Issue",
@@ -109,8 +123,43 @@ function getItemNumberFromTitle(title, format) {
             ],
         },
         {
+            format: "Softcover",
+            numberMatches: [
+                {
+                    name: "Volume",
+                    isMatchOf: (title) => title.match(patterns.softcoverVolumeWithNum) !== null,
+                    getNumber: (title) =>
+                        getCleanedItemNumber(title, patterns.softcoverVolumeWithNum),
+                },
+                {
+                    name: "Book",
+                    isMatchOf: (title) => title.match(patterns.softcoverBookWithNum) !== null,
+                    getNumber: (title) =>
+                        getCleanedItemNumber(title, patterns.softcoverBookWithNum),
+                },
+                {
+                    name: "Part",
+                    isMatchOf: (title) => title.match(patterns.softcoverPartWithNum) !== null,
+                    getNumber: (title) =>
+                        getCleanedItemNumber(title, patterns.softcoverPartWithNum),
+                },
+                {
+                    name: "SC",
+                    isMatchOf: (title) => title.match(patterns.softcoverWithNum) !== null,
+                    getNumber: (title) => getCleanedItemNumber(title, patterns.softcoverWithNum),
+                },
+            ],
+        },
+        {
             format: "Trade Paperback",
             numberMatches: [
+                {
+                    name: "Volume Episode",
+                    isMatchOf: (title) =>
+                        title.match(patterns.tradePaperbackVolumeSeasonWithNum) !== null,
+                    getNumber: (title) =>
+                        getCleanedItemNumber(title, patterns.tradePaperbackVolumeSeasonWithNum),
+                },
                 {
                     name: "Volume",
                     isMatchOf: (title) =>
@@ -170,17 +219,15 @@ function getItemNumberFromTitle(title, format) {
             format: "Graphic Novel",
             numberMatches: [
                 {
-                    name: "Trade Paperback",
+                    name: "Trade Paperback Volume Episode",
                     isMatchOf: (title) =>
-                        title.match(patterns.graphicNovelTradePaperbackWithNum) !== null,
+                        title.match(patterns.graphicNovelTradePaperbackVolumeEpisodeWithNum) !==
+                        null,
                     getNumber: (title) =>
-                        getCleanedItemNumber(title, patterns.graphicNovelTradePaperbackWithNum),
-                },
-                {
-                    name: "Volume",
-                    isMatchOf: (title) => title.match(patterns.graphicNovelVolumeWithNum) !== null,
-                    getNumber: (title) =>
-                        getCleanedItemNumber(title, patterns.graphicNovelVolumeWithNum),
+                        getCleanedItemNumber(
+                            title,
+                            patterns.graphicNovelTradePaperbackVolumeEpisodeWithNum
+                        ),
                 },
                 {
                     name: "Trade Paperback Volume",
@@ -192,17 +239,40 @@ function getItemNumberFromTitle(title, format) {
                             patterns.graphicNovelTradePaperbackVolumeWithNum
                         ),
                 },
+                {
+                    name: "Trade Paperback",
+                    isMatchOf: (title) =>
+                        title.match(patterns.graphicNovelTradePaperbackWithNum) !== null,
+                    getNumber: (title) =>
+                        getCleanedItemNumber(title, patterns.graphicNovelTradePaperbackWithNum),
+                },
+                {
+                    name: "Volume Episode",
+                    isMatchOf: (title) =>
+                        title.match(patterns.graphicNovelVolumeEpisodeWithNum) !== null,
+                    getNumber: (title) =>
+                        getCleanedItemNumber(title, patterns.graphicNovelVolumeEpisodeWithNum),
+                },
+                {
+                    name: "Volume",
+                    isMatchOf: (title) => title.match(patterns.graphicNovelVolumeWithNum) !== null,
+                    getNumber: (title) =>
+                        getCleanedItemNumber(title, patterns.graphicNovelVolumeWithNum),
+                },
             ],
         },
         {
             format: "Graphic Novel Hardcover",
             numberMatches: [
                 {
-                    name: "Hardcover",
+                    name: "Hardcover Volume Episode",
                     isMatchOf: (title) =>
-                        title.match(patterns.hardcoverGraphicNovelWithNum) !== null,
+                        title.match(patterns.hardcoverGraphicNovelVolumeEpisodeWithNum) !== null,
                     getNumber: (title) =>
-                        getCleanedItemNumber(title, patterns.hardcoverGraphicNovelWithNum),
+                        getCleanedItemNumber(
+                            title,
+                            patterns.hardcoverGraphicNovelVolumeEpisodeWithNum
+                        ),
                 },
                 {
                     name: "Hardcover Volume",
@@ -210,6 +280,13 @@ function getItemNumberFromTitle(title, format) {
                         title.match(patterns.hardcoverGraphicNovelVolumeWithNum) !== null,
                     getNumber: (title) =>
                         getCleanedItemNumber(title, patterns.hardcoverGraphicNovelVolumeWithNum),
+                },
+                {
+                    name: "Hardcover",
+                    isMatchOf: (title) =>
+                        title.match(patterns.hardcoverGraphicNovelWithNum) !== null,
+                    getNumber: (title) =>
+                        getCleanedItemNumber(title, patterns.hardcoverGraphicNovelWithNum),
                 },
             ],
         },
@@ -267,6 +344,7 @@ function getCleanedItemNumber(itemNumber) {
         .replace(patterns.leadingZeros, "")
         .replace(patterns.volume, " Volume ")
     const formatNumbers = cleanedItemNum.match(patterns.formatNumber)
+    console.log(formatNumbers)
     if (formatNumbers !== null)
         formatNumbers.forEach(
             (num) => (cleanedItemNum = cleanedItemNum.replace(num, ` #${num.trim()} `))
@@ -385,8 +463,7 @@ function getSegmentFromTitle(title, segmentDelimiterPatterns, searchDirection) {
             ? isReprint(searchDetails) !== null ||
                   isSubsequentPrinting(searchDetails) !== null ||
                   isMature(searchDetails) ||
-                  isFormat(searchDetails) !== null ||
-                  isLastWord(index, words)
+                  isFormat(searchDetails) !== null
             : isCoverLetter(searchDetails) !== null ||
                   isFormatNumber(searchDetails) !== null ||
                   isMiniSeries(searchDetails) !== null ||
@@ -398,13 +475,13 @@ function getSegmentFromTitle(title, segmentDelimiterPatterns, searchDirection) {
     const words = getTitleAsPaddedArray(title, searchDirection === "backwards")
     const titleWordsStartingWithDelimiter = []
     let foundDelimiter = false
+    const firstPattern = segmentDelimiterPatterns[0]
+    const secondPattern = segmentDelimiterPatterns[1]
     words.forEach((word, index, words) => {
         if (segmentDelimiterPatterns.length === 1) {
             if (word.match(segmentDelimiterPatterns[0])) foundDelimiter = true
             if (foundDelimiter) titleWordsStartingWithDelimiter.push(word)
         } else if (segmentDelimiterPatterns.length === 2) {
-            const firstPattern = segmentDelimiterPatterns[0]
-            const secondPattern = segmentDelimiterPatterns[1]
             if (
                 word.match(firstPattern) &&
                 !isLastWord(index, words) &&
@@ -418,11 +495,11 @@ function getSegmentFromTitle(title, segmentDelimiterPatterns, searchDirection) {
     const segmentWords = []
     let isEndFound = false
     titleWordsStartingWithDelimiter.forEach((word, index, words) => {
-        if (!isEndFound) {
-            if (isEndOfTitleSegment(word, index, words, searchDirection)) isEndFound = true
-            if (!isEndFound || (isLastWord(index, words) && word.match(patterns.letter)))
-                segmentWords.push(word)
-        }
+        console.log(word)
+        if (isEndOfTitleSegment(word, index, words, searchDirection)) isEndFound = true
+        console.log(isEndFound)
+        if (!isEndFound) segmentWords.push(word)
+        console.log(segmentWords)
     })
 
     return getStringFromPaddedArray(segmentWords, searchDirection === "backwards")
@@ -446,6 +523,13 @@ function getCoverLetterDescriptionFromTitle(title) {
         : ""
 }
 
+function getAdditionalDescriptionsFromTitle(title) {
+    const descriptions = []
+    const marvelSelect = title.match(patterns.marvelSelect)
+    if (marvelSelect !== null) descriptions.push(marvelSelect[0])
+    return descriptions
+}
+
 function getCleanedVariantDescription(descriptions) {
     const itemsToClean = [
         { pattern: patterns.adventure, replacement: " Adventure " },
@@ -460,6 +544,7 @@ function getCleanedVariantDescription(descriptions) {
         { pattern: patterns.finalOrderCutoff, replacement: " " },
         { pattern: patterns.kingInBlack, replacement: " King in Black " },
         { pattern: patterns.limited, replacement: " Limited " },
+        { pattern: patterns.marvelSelect, replacement: " Marvel Select Edition " },
         { pattern: patterns.ofThe, replacement: " of the " },
         { pattern: patterns.original, replacement: " Original " },
         { pattern: patterns.r, replacement: " " },
@@ -497,7 +582,7 @@ function getTrailingWordsFromTitle(title, itemNumber) {
         logger.error(
             "! Item Number expected but not found, there will be issue in retrieving trailing words from the title."
         )
-    const regExpItemNumber = itemNumber.replace("(", "\\(").replace(")", "\\)")
+    const regExpItemNumber = itemNumber.replace("(", "\\(").replace(")", "\\)").trim()
     const match = new RegExp(` ${regExpItemNumber} ((\\w+ )+)`, "gi")
     const itemNumberWithTrailingWords = title.match(match)
     const trailingWords =
@@ -518,9 +603,12 @@ function removeUnneededWordsFromTitle(title) {
         { pattern: patterns.net, replacement: " " },
         { pattern: patterns.oneShot, replacement: " " },
         { pattern: patterns.operatingAs, replacement: " " },
+        { pattern: patterns.psArtbooksMagazine, replacement: " " },
+        { pattern: patterns.psArtbooks, replacement: " " },
         { pattern: patterns.r, replacement: " " },
         { pattern: patterns.reprint, replacement: " " },
         { pattern: patterns.resolicit, replacement: " " },
+        { pattern: patterns.softee, replacement: " " },
         { pattern: patterns.subsequentPrintingNum, replacement: " " },
         { pattern: patterns.trailingParentheses, replacement: " " },
         { pattern: patterns.useOtherDiamondID, replacement: " " },
@@ -555,6 +643,21 @@ function getSubtitleFromTitle(title) {
 }
 
 function getCleanedSubtitle(subtitle, creators) {
+    function removeTrailingCreatorNamesFromSubtitle(creators, subtitleArray) {
+        const joinedCreatorNames = creators
+            .reduce((acc, curr) => {
+                const nameParts = curr.name.split(" ")
+                nameParts.forEach((part) => acc.push(part))
+                return acc
+            }, [])
+            .join("|")
+        return getStringFromPaddedArray(
+            subtitleArray.filter(
+                (word) => word.match(new RegExp(` (${joinedCreatorNames}) `, "ig")) === null
+            )
+        )
+    }
+
     const wordsToClean = [
         { pattern: patterns.adventure, replacement: " Adventure " },
         { pattern: patterns.collection, replacement: " Collection " },
@@ -567,18 +670,7 @@ function getCleanedSubtitle(subtitle, creators) {
     ]
 
     const subtitleArray = getTitleAsPaddedArray(subtitle, false)
-    const joinedCreatorNames = creators
-        .reduce((acc, curr) => {
-            const nameParts = curr.name.split(" ")
-            nameParts.forEach((part) => acc.push(part))
-            return acc
-        }, [])
-        .join("|")
-    let cleanedSubtitle = getStringFromPaddedArray(
-        subtitleArray.filter(
-            (word) => word.match(new RegExp(` (${joinedCreatorNames}) `, "ig")) === null
-        )
-    )
+    let cleanedSubtitle = removeTrailingCreatorNamesFromSubtitle(creators, subtitleArray)
     wordsToClean.forEach(
         (word) => (cleanedSubtitle = cleanedSubtitle.replace(word.pattern, word.replacement))
     )
@@ -595,10 +687,12 @@ function getCleanedTitle(title) {
         { pattern: patterns.deluxe, replacement: " Deluxe " },
         { pattern: patterns.edition, replacement: " Edition " },
         { pattern: patterns.editionWithParen, replacement: " Edition) " },
+        { pattern: patterns.originalGraphicNovel, replacement: " " },
         { pattern: patterns.graphicNovel, replacement: " " },
         { pattern: patterns.hardcover, replacement: " " },
         { pattern: patterns.kingInBlack, replacement: " King in Black " },
         { pattern: patterns.limited, replacement: " Limited " },
+        { pattern: patterns.marvelMasterworks, replacement: " Marvel Masterworks " },
         { pattern: patterns.ofThe, replacement: " of the " },
         { pattern: patterns.omnibus, replacement: " " },
         { pattern: patterns.original, replacement: " Original " },
@@ -622,6 +716,12 @@ function getCleanedTitle(title) {
     return cleanedTitle
 }
 
+function isFilterOut(comic) {
+    const test = comic.title.match(patterns.atlasSignatureEdition)
+    console.log(test)
+    return comic.title.match(patterns.atlasSignatureEdition) !== null
+}
+
 function getParsedComic(comic) {
     logger.info(`# Parsing ${comic.title} scraped from ${comic.url}`)
     const parsedComic = {}
@@ -639,7 +739,7 @@ function getParsedComic(comic) {
     parsedComic.solicitationDate = getSolicitDateFromDiamondID(parsedComic.diamondID)
     if (!comic.title) logger.error(`! The comic title was not found`)
     else {
-        parsedComic.title = comic.title
+        parsedComic.title = prepareTitleForParsing(comic.title)
         parsedComic.printingNumber = getPrintingNumberFromTitle(comic.title)
         parsedComic.coverLetter = getCoverLetterFromTitle(comic.title)
         parsedComic.versionOf = null
@@ -650,7 +750,10 @@ function getParsedComic(comic) {
             parsedComic.miniSeriesLimit = getMiniSeriesLimitFromTitle(parsedComic.title)
         else parsedComic.miniSeriesLimit = 0
         parsedComic.isOneShot = parsedComic.title.match(patterns.oneShot) !== null
-        if (parsedComic.format !== "Comic") parsedComic.format = getFormatFromTitle(comic.title)
+        if (parsedComic.isOneShot)
+            logger.warn("! Comic is one shot, there may be a one shot subtitle to parse.")
+        if (parsedComic.format !== "Comic")
+            parsedComic.format = getFormatFromTitle(parsedComic.title)
         parsedComic.itemNumber = getItemNumberFromTitle(parsedComic.title, parsedComic.format)
         parsedComic.variantDescription = getVariantDescriptionFromTitle(parsedComic.title)
         parsedComic.title = removeSegmentFromTitle(
@@ -664,10 +767,15 @@ function getParsedComic(comic) {
             parsedComic.title,
             parsedComic.coverLetterDescription
         )
+        parsedComic.additionalDescriptions = getAdditionalDescriptionsFromTitle(parsedComic.title)
+        parsedComic.additionalDescriptions.forEach((description) => {
+            parsedComic.title = removeSegmentFromTitle(parsedComic.title, description)
+        })
         parsedComic.variantDescription = getCleanedVariantDescription([
             parsedComic.coverLetterDescription,
             parsedComic.variantDescription,
             parsedComic.coverDescription,
+            ...parsedComic.additionalDescriptions,
         ])
         parsedComic.title = removeUnneededWordsFromTitle(parsedComic.title)
         if (parsedComic.format === "Comic") {
@@ -684,6 +792,7 @@ function getParsedComic(comic) {
         parsedComic.title = removeItemNumberFromTitle(parsedComic.title, parsedComic.itemNumber)
         parsedComic.itemNumber = getCleanedItemNumber(parsedComic.itemNumber)
         parsedComic.title = getCleanedTitle(parsedComic.title)
+        parsedComic.filterOut = isFilterOut(parsedComic)
         parsedComic.series = {
             id: null,
         }
@@ -692,7 +801,8 @@ function getParsedComic(comic) {
             //TODO finish cleaning this
         } else parsedComic.series.name = parsedComic.title
     }
-    logger.info(JSON.stringify(parsedComic, null, " "))
+    if (parsedComic.filterOut) logger.info("# Filtered out this release.")
+    else logger.info(JSON.stringify(parsedComic, null, " "))
 
     return parsedComic
 }

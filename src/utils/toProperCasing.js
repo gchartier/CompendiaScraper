@@ -34,7 +34,7 @@ function toProperCasing(str) {
         })
 
     // Certain words such as initialisms or acronyms should be left uppercase
-    uppers = ["ID", "TV", "B&W", "BPRD", "TMNT", "CGC"]
+    uppers = ["ID", "TV", "B&W", "BPRD", "TMNT", "CGC", "AD", "BC"]
     for (i = 0, j = uppers.length; i < j; i++)
         str = str.replace(new RegExp("\\b" + uppers[i] + "\\b", "ig"), uppers[i].toUpperCase())
 

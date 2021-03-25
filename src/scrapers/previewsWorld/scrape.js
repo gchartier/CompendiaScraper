@@ -50,7 +50,7 @@ async function getScrapedRelease(releaseLink, releaseFormat) {
     await sleep(SLEEP_SECONDS)
     const { data: newReleaseResponse } = await axios.get(url)
 
-    const title = " " + $(".Title", newReleaseResponse).text() + " "
+    const title = (".Title", newReleaseResponse).text()
     const seriesLink = null //TODO uncomment $(".ViewSeriesItemsLink", newReleaseResponse).attr("href")
     const seriesName = seriesLink ? ` ${await getScrapedSeriesName(baseURL + seriesLink)} ` : ""
     if (!seriesLink)
