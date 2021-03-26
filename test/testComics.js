@@ -7,7 +7,7 @@
 
 const testComics = [
     {
-        title: "POWER RANGERS #5 CVR B LEGACY VAR DI NICUOLO",
+        title: "2000 AD NOV 2020 PROG PACK",
         format: "Comic",
         creators: [],
     },

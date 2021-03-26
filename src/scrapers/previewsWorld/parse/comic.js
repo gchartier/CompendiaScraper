@@ -344,7 +344,6 @@ function getCleanedItemNumber(itemNumber) {
         .replace(patterns.leadingZeros, "")
         .replace(patterns.volume, " Volume ")
     const formatNumbers = cleanedItemNum.match(patterns.formatNumber)
-    console.log(formatNumbers)
     if (formatNumbers !== null)
         formatNumbers.forEach(
             (num) => (cleanedItemNum = cleanedItemNum.replace(num, ` #${num.trim()} `))
@@ -495,11 +494,8 @@ function getSegmentFromTitle(title, segmentDelimiterPatterns, searchDirection) {
     const segmentWords = []
     let isEndFound = false
     titleWordsStartingWithDelimiter.forEach((word, index, words) => {
-        console.log(word)
         if (isEndOfTitleSegment(word, index, words, searchDirection)) isEndFound = true
-        console.log(isEndFound)
         if (!isEndFound) segmentWords.push(word)
-        console.log(segmentWords)
     })
 
     return getStringFromPaddedArray(segmentWords, searchDirection === "backwards")
@@ -526,8 +522,24 @@ function getCoverLetterDescriptionFromTitle(title) {
 function getAdditionalDescriptionsFromTitle(title) {
     const descriptions = []
     const marvelSelect = title.match(patterns.marvelSelect)
+    const slipcaseEdition = title.match(patterns.slipcaseEdition)
+    const slipcase = title.match(patterns.slipcase)
     if (marvelSelect !== null) descriptions.push(marvelSelect[0])
+    if (slipcaseEdition !== null) descriptions.push(slipcaseEdition[0])
+    if (slipcase !== null && slipcaseEdition === null) descriptions.push(slipcase[0])
     return descriptions
+}
+
+function getAdditionalSubtitle(title) {
+    const subtitles = []
+    const monthYearProgPack = title.match(patterns.monthYearProgPack)
+    if (monthYearProgPack !== null) descriptions.push(monthYearProgPack[0])
+
+    if (subtitles.length < 1) subtitles.push("")
+    if (subtitles.length > 1)
+        logger.warn("! Multiple subtitles found for comic, needs manual parsing")
+
+    return subtitles[0]
 }
 
 function getCleanedVariantDescription(descriptions) {
@@ -718,7 +730,6 @@ function getCleanedTitle(title) {
 
 function isFilterOut(comic) {
     const test = comic.title.match(patterns.atlasSignatureEdition)
-    console.log(test)
     return comic.title.match(patterns.atlasSignatureEdition) !== null
 }
 
@@ -784,6 +795,9 @@ function getParsedComic(comic) {
                 parsedComic.itemNumber
             )
             parsedComic.title = removeSegmentFromTitle(parsedComic.title, parsedComic.titleOverflow)
+            parsedComic.subtitle = getAdditionalSubtitle(parsedComic.title)
+            parsedComic.title = removeSegmentFromTitle(parsedComic.title, parsedComic.subtitle)
+            parsedComic.subtitle = getCleanedSubtitle(parsedComic.subtitle, parsedComic.creators)
         } else {
             parsedComic.subtitle = getSubtitleFromTitle(parsedComic.title)
             parsedComic.title = removeSegmentFromTitle(parsedComic.title, parsedComic.subtitle)
