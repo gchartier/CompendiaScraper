@@ -7,7 +7,7 @@
 
 const testComics = [
     {
-        title: "2000 AD NOV 2020 PROG PACK",
+        title: "",
         format: "Comic",
         creators: [],
     },

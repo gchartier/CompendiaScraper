@@ -532,8 +532,11 @@ function getAdditionalDescriptionsFromTitle(title) {
 
 function getAdditionalSubtitle(title) {
     const subtitles = []
-    const monthYearProgPack = title.match(patterns.monthYearProgPack)
-    if (monthYearProgPack !== null) descriptions.push(monthYearProgPack[0])
+    const monthYearPack = title.match(patterns.monthYearPack)
+    if (monthYearPack !== null) subtitles.push(monthYearPack[0])
+
+    const seasonSpecialYear = title.match(patterns.seasonSpecialYear)
+    if (seasonSpecialYear !== null) subtitles.push(seasonSpecialYear[0])
 
     if (subtitles.length < 1) subtitles.push("")
     if (subtitles.length > 1)
@@ -590,21 +593,25 @@ function removeItemNumberFromTitle(title, itemNumber) {
 }
 
 function getTrailingWordsFromTitle(title, itemNumber) {
+    let trailingWords = ""
     if (!itemNumber)
         logger.error(
-            "! Item Number expected but not found, there will be issue in retrieving trailing words from the title."
+            "! Item Number expected but not found, skipping retrieval of trailing words from title."
         )
-    const regExpItemNumber = itemNumber.replace("(", "\\(").replace(")", "\\)").trim()
-    const match = new RegExp(` ${regExpItemNumber} ((\\w+ )+)`, "gi")
-    const itemNumberWithTrailingWords = title.match(match)
-    const trailingWords =
-        itemNumberWithTrailingWords !== null
-            ? itemNumberWithTrailingWords[0].replace(itemNumber, " ").trim()
-            : ""
-    if (trailingWords)
-        logger.warn(
-            "! There were trailing words found in the title, they may need to be manually parsed."
-        )
+    else {
+        const regExpItemNumber = itemNumber.replace("(", "\\(").replace(")", "\\)").trim()
+        const match = new RegExp(` ${regExpItemNumber} ((\\w+ )+)`, "gi")
+        const itemNumberWithTrailingWords = title.match(match)
+        trailingWords =
+            itemNumberWithTrailingWords !== null
+                ? itemNumberWithTrailingWords[0].replace(itemNumber, " ").trim()
+                : ""
+        if (trailingWords)
+            logger.warn(
+                "! There were trailing words found in the title, they may need to be manually parsed."
+            )
+    }
+
     return trailingWords
 }
 
