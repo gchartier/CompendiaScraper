@@ -1,12 +1,13 @@
-function toProperCasing(str) {
-    let i, j, lowers, uppers
-    str = str.replace(/([^\W_]+[^\s-]*) */g, function (txt) {
-        return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
-    })
+function convertToTitleCasing(str) {
+    return str.replace(
+        /([^\W_]+[^\s-]*) */g,
+        (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+    )
+}
 
-    // Certain minor words should be left lowercase unless
-    // they are the first or last words in the string
-    lowers = [
+function formatLowercaseWords(str) {
+    let lowercasedStr = str
+    const lowers = [
         "An",
         "The",
         "And",
@@ -28,25 +29,41 @@ function toProperCasing(str) {
         "To",
         "With",
     ]
-    for (i = 0, j = lowers.length; i < j; i++)
-        str = str.replace(new RegExp("\\s" + lowers[i] + "\\s", "ig"), function (txt) {
-            return txt.toLowerCase()
-        })
+    lowers.forEach((lower) => {
+        lowercasedStr = lowercasedStr.replace(new RegExp(`\\w+ ${lower} `, "ig"), (txt) =>
+            txt.toLowerCase()
+        )
+    })
 
-    // Certain words such as initialisms or acronyms should be left uppercase
-    uppers = ["ID", "TV", "B&W", "BPRD", "TMNT", "CGC", "AD", "BC"]
-    for (i = 0, j = uppers.length; i < j; i++)
-        str = str.replace(new RegExp("\\b" + uppers[i] + "\\b", "ig"), uppers[i].toUpperCase())
+    return lowercasedStr
+}
 
-    // Make roman numerals uppercase
-    str = str.replace(
+function formatUppercaseWords(str) {
+    let uppercasedStr = str
+    const uppers = ["ID", "TV", "B&W", "B.P.R.D", "TMNT", "CGC", "AD", "BC"]
+    uppers.forEach((upper) => {
+        uppercasedStr = uppercasedStr.replace(
+            new RegExp(`\\b${upper}\\b`, "ig"),
+            upper.toUpperCase()
+        )
+    })
+
+    return uppercasedStr
+}
+
+function formatRomanNumerals(str) {
+    return str.replace(
         / (?=[MDCLXVI])M*(C[MD]|D?C{0,3})(X[CL]|L?X{0,3})(I[XV]|V?I{0,3}) /i,
-        function (match) {
-            return match.toUpperCase()
-        }
+        (match) => match.toUpperCase()
     )
+}
 
-    return str
+function toProperCasing(str) {
+    let properlyCasedStr = convertToTitleCasing(str)
+    properlyCasedStr = formatLowercaseWords(properlyCasedStr)
+    properlyCasedStr = formatUppercaseWords(properlyCasedStr)
+    properlyCasedStr = formatRomanNumerals(properlyCasedStr)
+    return properlyCasedStr
 }
 
 module.exports = toProperCasing

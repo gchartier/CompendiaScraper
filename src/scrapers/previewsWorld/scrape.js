@@ -23,7 +23,7 @@ async function getScrapedReleaseLinksAndFormats() {
         throw new Error("Retrieved links and formats do not have equal lengths")
 
     const linksAndFormats = []
-    for (let i = 0; i < 1; i++)
+    for (let i = 0; i < newReleaseLinks.length; i++)
         linksAndFormats.push({
             link: newReleaseLinks[i].attribs.href,
             format: newReleaseFormats[i],

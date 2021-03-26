@@ -6,6 +6,7 @@ const patterns = {
     atlasSignatureEdition: / ((SGN ATLAS ED)|(ATLAS ED)|(ATLAS (((\w+) )+)ED)|(ATLAS (((\w+) )+)SGN)||(ATLAS SGN)) /gi,
     blackAndWhite: / B&W /i,
     blankCover: / BLANK (CVR|COVER) /i,
+    bprd: / BPRD /gi,
     collection: / COLL /i,
     cosplay: / COSPLAY /i,
     cosplayPhotoCover: / COSPLAY PHOTO (CVR|COVER) /i,

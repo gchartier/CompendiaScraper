@@ -3,6 +3,9 @@
 .vscode
 *.jpg
 
+# Test
+testComics.js
+
 # Logs
 log
 *.log

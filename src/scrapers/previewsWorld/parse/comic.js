@@ -370,10 +370,14 @@ function getCoverLetterFromTitle(title) {
 
 function getVariantTypeFromTitle(title) {
     const variantTypes = []
-    if (title.match(patterns.coverLetter) || title.match(patterns.cover)) variantTypes.push("cvr")
+    if (
+        title.match(patterns.coverLetter) ||
+        title.match(patterns.cover) ||
+        title.match(patterns.variant)
+    )
+        variantTypes.push("cvr")
     if (title.match(patterns.reprint)) variantTypes.push("rpr")
     if (title.match(patterns.subsequentPrintingNum)) variantTypes.push("spr")
-    if (title.match(patterns.variant)) variantTypes.push("var")
 
     if (variantTypes.length > 1) logger.error("! More than one variant type found for this comic.")
 
@@ -702,6 +706,7 @@ function getCleanedSubtitle(subtitle, creators) {
 function getCleanedTitle(title) {
     const itemsToClean = [
         { pattern: patterns.adventure, replacement: " Adventure " },
+        { pattern: patterns.bprd, replacement: " B.P.R.D " },
         { pattern: patterns.anniversary, replacement: " Anniversary " },
         { pattern: patterns.collection, replacement: " Collection " },
         { pattern: patterns.deluxe, replacement: " Deluxe " },
