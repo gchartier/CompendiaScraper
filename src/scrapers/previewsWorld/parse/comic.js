@@ -370,9 +370,10 @@ function getCoverLetterFromTitle(title) {
 
 function getVariantTypeFromTitle(title) {
     const variantTypes = []
-    if (title.match(patterns.coverLetter)) variantTypes.push("cvr")
+    if (title.match(patterns.coverLetter) || title.match(patterns.cover)) variantTypes.push("cvr")
     if (title.match(patterns.reprint)) variantTypes.push("rpr")
     if (title.match(patterns.subsequentPrintingNum)) variantTypes.push("spr")
+    if (title.match(patterns.variant)) variantTypes.push("var")
 
     if (variantTypes.length > 1) logger.error("! More than one variant type found for this comic.")
 

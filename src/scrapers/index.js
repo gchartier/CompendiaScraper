@@ -10,7 +10,7 @@ module.exports = (async () => {
 
         await connect()
         comics.push.apply(comics, await getScrapedPreviewsWorldReleases())
-        //await commitComics(comics)
+        await commitComics(comics)
     }
     catch(error) {
         logger.error(`! ${error.message}`)

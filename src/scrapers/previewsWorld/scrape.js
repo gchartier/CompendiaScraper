@@ -23,7 +23,7 @@ async function getScrapedReleaseLinksAndFormats() {
         throw new Error("Retrieved links and formats do not have equal lengths")
 
     const linksAndFormats = []
-    for (let i = 0; i < newReleaseLinks.length; i++)
+    for (let i = 0; i < 1; i++)
         linksAndFormats.push({
             link: newReleaseLinks[i].attribs.href,
             format: newReleaseFormats[i],
@@ -50,7 +50,7 @@ async function getScrapedRelease(releaseLink, releaseFormat) {
     await sleep(SLEEP_SECONDS)
     const { data: newReleaseResponse } = await axios.get(url)
 
-    const title = (".Title", newReleaseResponse).text()
+    const title = $(".Title", newReleaseResponse).text()
     const seriesLink = null //TODO uncomment $(".ViewSeriesItemsLink", newReleaseResponse).attr("href")
     const seriesName = seriesLink ? ` ${await getScrapedSeriesName(baseURL + seriesLink)} ` : ""
     if (!seriesLink)
