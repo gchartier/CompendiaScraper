@@ -1,34 +1,27 @@
-const mongoose = require("mongoose")
-const logger = require("../utils/logger.js")
-const seriesModel = require("../models/series.js")
+const logger = require("../utils/logger")
 
-async function updateExistingSeries(doc, query, comicID, comicTitle) {
-    if (query.entries.includes(doc.entries[0]) === false) {
-        query.entries.push(doc.entries[0])
-        await query.save()
-        logger.info(
-            `+ Existing Series: ${seriesNameQuery.name} with id = ${seriesNameQuery._id} updated with new entry ${comicTitle} with id = ${comicID} in database`
-        )
-    }
+async function getExistingSeriesIDByName(client, seriesName) {
+    const query = `SELECT series_id FROM series WHERE name = $1`
+    const params = [seriesName]
+    const result = await client.query(query, params)
+    return result.rows && result.rows.length === 1 ? result.rows[0].series_id : null
 }
 
-async function insertNewSeries(seriesDoc) {
-    await seriesDoc.save()
-    logger.info(`+ New Series: ${seriesDoc.name} with id = ${seriesDoc._id} saved to database`)
+async function insertNewSeriesAndGetID(client, seriesName, publisherID) {
+    const insert = `INSERT INTO series(name, publisher_id) VALUES($1, $2) RETURNING series_id`
+    const params = [seriesName, publisherID]
+    const result = await client.query(insert, params)
+    if (result.rows.length !== 1 || !result.rows[0].series_id)
+        throw new Error("Series was not inserted")
+    logger.info(`# Inserted new series to database with name ${seriesName}`)
+    return result.rows[0].series_id
 }
 
-async function insertOrUpdateSeries(comicDoc) {
-    const seriesDoc = new seriesModel({
-        _id: new mongoose.Types.ObjectId(),
-        name: comicDoc.seriesName,
-        entries: [comicDoc._id],
-    })
-
-    const seriesNameQuery = await seriesModel.findOne({ name: seriesDoc.name })
-    if (seriesNameQuery)
-        await updateExistingSeries(seriesDoc, seriesNameQuery, comicDoc._id, comicDoc.title)
-    else await insertNewSeries(seriesDoc)
-    return seriesNameQuery ? seriesNameQuery._id : seriesDoc._id
+async function getSeriesID(client, seriesName, publisherID) {
+    if (!seriesName) throw new Error("Series name was not valid")
+    if (!publisherID) throw new Error("Publisher ID was not valid")
+    const seriesID = await getExistingSeriesIDByName(client, seriesName)
+    return seriesID ? seriesID : await insertNewSeriesAndGetID(client, seriesName, publisherID)
 }
 
-module.exports = insertOrUpdateSeries
+module.exports = getSeriesID

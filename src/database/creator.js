@@ -1,48 +1,29 @@
-const mongoose = require("mongoose")
-const logger = require("../utils/logger.js")
-const { creatorModel } = require("../models/creator.js")
+const logger = require("../utils/logger")
 
-async function updateExistingCreator(doc, query, comicID, comicTitle) {
-    query.type = doc.type
-    await query.save()
-    logger.info(
-        `+ Existing Creator: ${query.name} with id = ${query._id} updated with new creator type ${doc.type} in database`
-    )
+async function getExistingCreatorIDByName(client, creatorName) {
+    const query = `SELECT creator_id FROM creators WHERE name = $1`
+    const params = [creatorName]
+    const result = await client.query(query, params)
+    return result.rows && result.rows.length === 1 ? result.rows[0].creator_id : null
+}
 
-    if (query.entries.includes(comicID) === false) {
-        query.entries.push(comicID)
-        await query.save()
-        logger.info(
-            `+ Existing Creator: ${query.name} with id = ${query._id} updated with new comic entry ${comicTitle} with id = ${comicID} in database`
-        )
+async function insertNewCreatorAndGetID(client, creatorName) {
+    const insert = `INSERT INTO creators(name) VALUES($1) RETURNING creator_id`
+    const params = [creatorName]
+    const result = await client.query(insert, params)
+    if (result.rows.length !== 1 || !result.rows[0].creator_id)
+        throw new Error("Creator was not inserted")
+    logger.info(`# Inserted new creator to database with name ${creatorName}`)
+    return result.rows[0].creator_id
+}
+
+async function getCreatorsWithIDs(client, creators) {
+    for (const creator of creators) {
+        if (!creator.name) throw new Error("Creator name not valid")
+        const creatorID = await getExistingCreatorIDByName(client, creator.name)
+        creator.ID = creatorID ? creatorID : await insertNewCreatorAndGetID(client, creator.name)
     }
+    return creators
 }
 
-async function insertNewCreator(doc) {
-    await doc.save()
-    logger.info(`+ New Creator: ${doc.name} with id = ${doc._id} saved to database`)
-}
-
-async function insertOrUpdateCreator(creatorDoc, comicID, comicTitle) {
-    const creatorQuery = await creatorModel.findOne({ name: creatorDoc.name })
-
-    if (creatorQuery) await updateExistingCreator(creatorDoc, creatorQuery, comicID, comicTitle)
-    else await insertNewCreator(creatorDoc)
-
-    return creatorQuery ? creatorQuery._id : creatorDoc._id
-}
-
-async function insertOrUpdateCreators(comicDoc) {
-    for (const creator of comicDoc.creators) {
-        const newCreatorModel = new creatorModel({
-            _id: new mongoose.Types.ObjectId(),
-            name: creator.name,
-            type: creator.type,
-            entries: [comicDoc._id],
-        })
-
-        creator._id = await insertOrUpdateCreator(newCreatorModel, comicDoc._id, comicDoc.title)
-    }
-}
-
-module.exports = insertOrUpdateCreators
+module.exports = getCreatorsWithIDs

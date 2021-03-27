@@ -1,16 +1,13 @@
 require("dotenv").config()
 const logger = require("../utils/logger.js")
-const connect = require("../database/connect.js")
-const commitComics = require("../database/commit.js")
+const { writeReleasesToStagingFile } = require("../utils/stagedReleases.js")
 const getScrapedPreviewsWorldReleases = require("./previewsWorld/scrape.js")
 
 module.exports = (async () => {
     try {
-        const comics = []
-
-        await connect()
-        comics.push.apply(comics, await getScrapedPreviewsWorldReleases())
-        //await commitComics(comics)
+        const releases = []
+        releases.push.apply(releases, await getScrapedPreviewsWorldReleases())
+        writeReleasesToStagingFile(releases)
     }
     catch(error) {
         logger.error(`! ${error.message}`)

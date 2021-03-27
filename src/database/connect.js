@@ -1,31 +1,27 @@
-const mongoose = require("mongoose")
-const logger = require("../utils/logger.js")
-const comicModel = require("../models/comic.js")
-const seriesModel = require("../models/series.js")
-const { creatorModel } = require("../models/creator.js")
+const { Pool } = require("pg")
 
-function connectCallback(error, client) {
-    if (error) throw error
-    else {
-        const db = client.db
-        // TODO Shouldn't I close this?
-    }
+const isProduction = process.env.NODE_ENV === "PRODUCTION"
+const connectionString = `postgres://${process.env.PG_USER}:${process.env.PG_PASSWORD}@${process.env.PG_HOST}:${process.env.PG_PORT}/${process.env.PG_DATABASE}`
+
+// Use a symbol to store a global instance of a connection, and to access it from the singleton.
+const DB_KEY = Symbol.for("Compendia.db")
+const globalSymbols = Object.getOwnPropertySymbols(global)
+const hasDb = globalSymbols.includes(DB_KEY)
+
+if (!hasDb) {
+    global[DB_KEY] = new Pool({
+        connectionString,
+        ssl: isProduction,
+    })
 }
 
-async function connect() {
-    const connectionString = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_SERVER}/${process.env.DB}`
-    const options = {
-        useNewUrlParser: true,
-        useCreateIndex: true,
-    }
-    try {
-        mongoose.connect(connectionString, options, connectCallback)
-        await comicModel.deleteMany({})
-        await creatorModel.deleteMany({})
-        await seriesModel.deleteMany({})
-    } catch (error) {
-        logger.error(`! MongoDB error: ${error.message}`)
-    }
-}
+// Create and freeze the singleton object so that it has an instance property.
+const singleton = {}
+Object.defineProperty(singleton, "instance", {
+    get: function () {
+        return global[DB_KEY]
+    },
+})
+Object.freeze(singleton)
 
-module.exports = connect
+module.exports = singleton

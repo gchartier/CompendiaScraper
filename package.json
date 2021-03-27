@@ -4,7 +4,8 @@
     "description": "Compendia new comic releases web scraper",
     "main": "src/scrapers/index.js",
     "scripts": {
-        "start": "node src/scrapers/index.js",
+        "parse": "node src/scrapers/index.js",
+        "commit": "node src/database/commit.js",
         "test": "node src/scrapers/previewsWorld/test/manualTest.js",
         "start-watch": "nodemon src/scrapers/index.js"
     },
@@ -17,8 +18,7 @@
         "cheerio": "^1.0.0-rc.3",
         "date-fns": "^2.18.0",
         "dotenv": "^8.2.0",
-        "mongodb": "^3.2.4",
-        "mongoose": "^5.5.8",
+        "pg": "^8.5.1",
         "resemblejs": "^3.2.5",
         "winston": "^3.3.3",
         "winston-daily-rotate-file": "^3.9.0"

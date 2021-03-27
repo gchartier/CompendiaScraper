@@ -589,6 +589,29 @@ function getCleanedVariantDescription(descriptions) {
     return cleanedDescriptions.join("; ")
 }
 
+function parseVariantDescriptionFromTitle(parsedComic) {
+    parsedComic.variantDescription = getVariantDescriptionFromTitle(parsedComic.title)
+    parsedComic.title = removeSegmentFromTitle(parsedComic.title, parsedComic.variantDescription)
+    parsedComic.coverDescription = getCoverDescriptionFromTitle(parsedComic.title)
+    parsedComic.title = removeSegmentFromTitle(parsedComic.title, parsedComic.coverDescription)
+    parsedComic.coverLetterDescription = getCoverLetterDescriptionFromTitle(parsedComic.title)
+    parsedComic.title = removeSegmentFromTitle(
+        parsedComic.title,
+        parsedComic.coverLetterDescription
+    )
+    parsedComic.additionalDescriptions = getAdditionalDescriptionsFromTitle(parsedComic.title)
+    parsedComic.additionalDescriptions.forEach((description) => {
+        parsedComic.title = removeSegmentFromTitle(parsedComic.title, description)
+    })
+
+    return getCleanedVariantDescription([
+        parsedComic.coverLetterDescription,
+        parsedComic.variantDescription,
+        parsedComic.coverDescription,
+        ...parsedComic.additionalDescriptions,
+    ])
+}
+
 function removeSegmentFromTitle(title, description) {
     return title.replace(description, " ")
 }
@@ -747,17 +770,18 @@ function isFilterOut(comic) {
 }
 
 function getParsedComic(comic) {
-    logger.info(`# Parsing ${comic.title} scraped from ${comic.url}`)
+    logger.info(`# Parsing ${comic.title} scraped from ${comic.link}`)
     const parsedComic = {}
 
+    parsedComic.unparsedCreators = comic.creators
+    parsedComic.unparsedTitle = comic.title
+    parsedComic.link = comic.link
     parsedComic.diamondID = comic.diamondID
     parsedComic.publisher = getPublisher(comic.publisher)
     parsedComic.releaseDate = getFormattedReleaseDate(comic.releaseDate)
     parsedComic.coverPrice = comic.coverPrice
     parsedComic.cover = comic.coverURL
     parsedComic.description = comic.description
-    parsedComic.unparsedCreators = comic.creators
-    parsedComic.unparsedTitle = comic.title
     parsedComic.creators = getParsedCreatorsFromNodes(comic.creators)
     parsedComic.format = comic.format
     parsedComic.solicitationDate = getSolicitDateFromDiamondID(parsedComic.diamondID)
@@ -779,28 +803,7 @@ function getParsedComic(comic) {
         if (parsedComic.format !== "Comic")
             parsedComic.format = getFormatFromTitle(parsedComic.title)
         parsedComic.itemNumber = getItemNumberFromTitle(parsedComic.title, parsedComic.format)
-        parsedComic.variantDescription = getVariantDescriptionFromTitle(parsedComic.title)
-        parsedComic.title = removeSegmentFromTitle(
-            parsedComic.title,
-            parsedComic.variantDescription
-        )
-        parsedComic.coverDescription = getCoverDescriptionFromTitle(parsedComic.title)
-        parsedComic.title = removeSegmentFromTitle(parsedComic.title, parsedComic.coverDescription)
-        parsedComic.coverLetterDescription = getCoverLetterDescriptionFromTitle(parsedComic.title)
-        parsedComic.title = removeSegmentFromTitle(
-            parsedComic.title,
-            parsedComic.coverLetterDescription
-        )
-        parsedComic.additionalDescriptions = getAdditionalDescriptionsFromTitle(parsedComic.title)
-        parsedComic.additionalDescriptions.forEach((description) => {
-            parsedComic.title = removeSegmentFromTitle(parsedComic.title, description)
-        })
-        parsedComic.variantDescription = getCleanedVariantDescription([
-            parsedComic.coverLetterDescription,
-            parsedComic.variantDescription,
-            parsedComic.coverDescription,
-            ...parsedComic.additionalDescriptions,
-        ])
+        parsedComic.variantDescription = parseVariantDescriptionFromTitle(parsedComic)
         parsedComic.title = removeUnneededWordsFromTitle(parsedComic.title)
         if (parsedComic.format === "Comic") {
             parsedComic.titleOverflow = getTrailingWordsFromTitle(
@@ -822,14 +825,14 @@ function getParsedComic(comic) {
         parsedComic.filterOut = isFilterOut(parsedComic)
         parsedComic.series = {
             id: null,
+            link: comic.series && comic.series.link ? comic.series.link : "",
         }
-        if (comic.series && comic.series.link) {
-            parsedComic.series.name = comic.series.name
-            //TODO finish cleaning this
-        } else parsedComic.series.name = parsedComic.title
+        parsedComic.series.name = parsedComic.series.link ? comic.series.name : parsedComic.title
+        if (!parsedComic.series.link) {
+            //TODO clean series name
+        }
     }
     if (parsedComic.filterOut) logger.info("# Filtered out this release.")
-    else logger.info(JSON.stringify(parsedComic, null, " "))
 
     return parsedComic
 }

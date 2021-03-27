@@ -23,7 +23,7 @@ async function getScrapedReleaseLinksAndFormats() {
         throw new Error("Retrieved links and formats do not have equal lengths")
 
     const linksAndFormats = []
-    for (let i = 0; i < newReleaseLinks.length; i++)
+    for (let i = 0; i < 2; i++)
         linksAndFormats.push({
             link: newReleaseLinks[i].attribs.href,
             format: newReleaseFormats[i],
@@ -61,7 +61,7 @@ async function getScrapedRelease(releaseLink, releaseFormat) {
     logger.info(`# Scraped ${url} with title ${title}:`)
 
     const scrapedRelease = {
-        url: url,
+        link: url,
         title: title,
         series: {
             name: seriesName,
@@ -133,12 +133,13 @@ async function getScrapedPreviewsWorldReleases() {
 
     const filteredScrapedReleases = filterOutReleasesWithFlaggedPublishers(scrapedReleases)
     const releases = []
-    for (const [index, release] of filteredScrapedReleases.entries()) {
-        await sleep(1)
+    filteredScrapedReleases.forEach((release, index) => {
         logger.info(`# Release ${index + 1} of ${filteredScrapedReleases.length}`)
-        releases.push(getParsedComic(release))
-        logger.info(`# Finished new release from ${release.url}`)
-    }
+        const parsedRelease = getParsedComic(release)
+        parsedRelease._releaseNumber = index + 1
+        if (parsedRelease.filterOut === false) releases.push(parsedRelease)
+        logger.info(`# Finished release ${index + 1} of ${filteredScrapedReleases.length} \n`)
+    })
 
     logger.info(`# Finished retrieving Previews World new releases`)
     return releases
