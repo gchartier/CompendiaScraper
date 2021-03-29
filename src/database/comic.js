@@ -38,7 +38,7 @@ async function getVersionOf(client, comic) {
 async function insertComicAndGetID(client, comic) {
     const insert = `INSERT INTO comics(age_rating, cover_letter, cover_price, description, diamond_id, format, 
         is_mini_series, is_one_shot, item_number, mini_series_limit, printing, release_date, series_id, 
-        solicitation_date, subtitle, title, variant_description, variant_type, version_of) 
+        solicitation_date, subtitle, title, variant_description, variant_types, version_of) 
         VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
         RETURNING comic_id`
     const params = [
@@ -59,7 +59,7 @@ async function insertComicAndGetID(client, comic) {
         comic.subtitle,
         comic.title,
         comic.variantDescription,
-        comic.variantType,
+        comic.variantTypes,
         comic.versionOf,
     ]
     const result = await client.query(insert, params)

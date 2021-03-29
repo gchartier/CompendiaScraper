@@ -1,11 +1,23 @@
+const {
+    getTitleAsPaddedArray,
+    getStringFromPaddedArray,
+    removeSegmentFromTitle,
+    isFilterOut,
+} = require("./util.js")
+const {
+    getCoverLetterFromTitle,
+    getVariantTypesFromTitle,
+    parseVariantDescriptionFromTitle,
+} = require("./variant.js")
 const { format } = require("date-fns")
 const patterns = require("../patterns.js")
 const logger = require("../../../utils/logger.js")
 const getParsedCreatorsFromNodes = require("./creator.js")
+const { parseSubtitleFromTitle } = require("./subtitle.js")
 const toProperCasing = require("../../../utils/toProperCasing.js")
 const getMonthFromAbbreviation = require("../../../utils/getMonth.js")
 
-function getPublisher(publisher) {
+function getParsedPublisher(publisher) {
     if (!publisher)
         logger.error("! No publisher found from parsed data. Manual addition of publisher needed.")
 
@@ -48,6 +60,14 @@ function getPrintingNumberFromTitle(title) {
     return printingNum !== "" ? parseInt(printingNum) : 1
 }
 
+function getAgeRatingFromTitle(title) {
+    return title.match(patterns.mature) !== null ? "MA" : null
+}
+
+function getIsMiniSeriesFromTitle(title) {
+    return title.match(patterns.miniSeries) !== null
+}
+
 function getFormattedReleaseDate(dateString) {
     if (!dateString) logger.error("! No release date found from parsed data, using today's date.")
 
@@ -71,7 +91,7 @@ function getFormatFromTitle(title) {
     return format
 }
 
-function getMiniSeriesLimitFromTitle(title) {
+function getMiniSeriesLimitFromTitle(title, isMiniSeries) {
     let miniSeriesLimit = null
     const miniSeriesMatch = title.match(patterns.miniSeries)
     if (miniSeriesMatch !== null) {
@@ -82,7 +102,13 @@ function getMiniSeriesLimitFromTitle(title) {
             logger.error("! Expected to find mini series limit from title but didn't")
     }
 
-    return miniSeriesLimit ? parseInt(miniSeriesLimit) : null
+    return isMiniSeries && miniSeriesLimit ? parseInt(miniSeriesLimit) : null
+}
+
+function getIsOneShotFromTitle(title) {
+    const isOneShot = title.match(patterns.oneShot) !== null
+    if (isOneShot) logger.warn("! Comic is one shot, there may be a one shot subtitle to parse.")
+    return isOneShot
 }
 
 function getItemNumberFromTitle(title, format) {
@@ -350,295 +376,6 @@ function getCleanedItemNumber(itemNumber) {
     return cleanedItemNum ? cleanedItemNum : null
 }
 
-function getCoverLetterFromTitle(title) {
-    let coverLetter = null
-    const coverLetterMatch = title.match(patterns.coverLetter)
-    if (coverLetterMatch !== null) {
-        const matchString = coverLetterMatch.toString()
-        const letter = matchString !== null ? matchString.substring(5, matchString.length - 1) : ""
-        coverLetter = letter
-        if (coverLetter.length < 1)
-            logger.error(
-                "! Cover letter from title was expected but not found. Potential error in title"
-            )
-    }
-
-    return coverLetter
-}
-
-function getVariantTypeFromTitle(title) {
-    const variantTypes = []
-    if (
-        title.match(patterns.coverLetter) ||
-        title.match(patterns.cover) ||
-        title.match(patterns.variant)
-    )
-        variantTypes.push("cvr")
-    if (title.match(patterns.reprint)) variantTypes.push("rpr")
-    if (title.match(patterns.subsequentPrintingNum)) variantTypes.push("spr")
-
-    if (variantTypes.length > 1) logger.error("! More than one variant type found for this comic.")
-
-    return variantTypes.length > 0 ? variantTypes[0] : null //TODO finish variantType as variantTypes
-}
-
-function getTitleAsPaddedArray(title, reversed) {
-    const paddedTitleArray = title
-        .split(" ")
-        .filter((word) => word !== "")
-        .map((word) => ` ${word} `)
-    return reversed ? paddedTitleArray.reverse() : paddedTitleArray
-}
-
-function getStringFromPaddedArray(words, reversed) {
-    return reversed
-        ? ` ${words
-              .reverse()
-              .map((word) => word.trim())
-              .join(" ")} `
-        : ` ${words.map((word) => word.trim()).join(" ")} `
-}
-
-function getSegmentFromTitle(title, segmentDelimiterPatterns, searchDirection) {
-    function isLastWord(index, words) {
-        return index === words.length - 1
-    }
-
-    function isCoverLetter({ word, index, words, searchDirection }) {
-        return searchDirection === "forwards"
-            ? word.match(patterns.cover) &&
-                  !isLastWord(index, words) &&
-                  words[index + 1].match(patterns.letter)
-            : word.match(patterns.letter) &&
-                  !isLastWord(index, words) &&
-                  words[index + 1].match(patterns.cover)
-    }
-
-    function isSubsequentPrinting({ word, index, words, searchDirection }) {
-        return searchDirection === "forwards"
-            ? word.match(patterns.printingNum) &&
-                  !isLastWord(index, words) &&
-                  words[index + 1].match(patterns.printing)
-            : word.match(patterns.printing) &&
-                  !isLastWord(index, words) &&
-                  words[index + 1].match(patterns.printingNum)
-    }
-
-    function isReprint({ word, index, words, searchDirection }) {
-        return searchDirection === "forwards"
-            ? word.match(patterns.reprintNew) &&
-                  !isLastWord(index, words) &&
-                  words[index + 1].match(patterns.reprintPrinting)
-            : word.match(patterns.reprintPrinting) &&
-                  !isLastWord(index, words) &&
-                  words[index + 1].match(patterns.reprintNew)
-    }
-
-    function isFormatNumber({ word, index, words }) {
-        return (
-            word.match(patterns.number) ||
-            (word.match(patterns.formatNumber) &&
-                index < words.length - 1 &&
-                words[index + 1].match(patterns.formatAndNumberTypes))
-        )
-    }
-
-    function isFormat({ word }) {
-        return word.match(patterns.formatAndNumberTypes)
-    }
-
-    function isMiniSeries({ word, index, words }) {
-        return (
-            word.match(patterns.miniSeriesNumber) &&
-            index < words.length - 1 &&
-            words[index + 1].match(patterns.miniSeriesInd)
-        )
-    }
-
-    function isMature({ word }) {
-        return word.match(patterns.mature)
-    }
-
-    function isEndOfTitleSegment(word, index, words, searchDirection) {
-        const searchDetails = { word, index, words, searchDirection }
-        return searchDirection === "forwards"
-            ? isReprint(searchDetails) !== null ||
-                  isSubsequentPrinting(searchDetails) !== null ||
-                  isMature(searchDetails) ||
-                  isFormat(searchDetails) !== null
-            : isCoverLetter(searchDetails) !== null ||
-                  isFormatNumber(searchDetails) !== null ||
-                  isMiniSeries(searchDetails) !== null ||
-                  isReprint(searchDetails) !== null ||
-                  isSubsequentPrinting(searchDetails) !== null ||
-                  isFormat(searchDetails) !== null
-    }
-
-    const words = getTitleAsPaddedArray(title, searchDirection === "backwards")
-    const titleWordsStartingWithDelimiter = []
-    let foundDelimiter = false
-    const firstPattern = segmentDelimiterPatterns[0]
-    const secondPattern = segmentDelimiterPatterns[1]
-    words.forEach((word, index, words) => {
-        if (segmentDelimiterPatterns.length === 1) {
-            if (word.match(segmentDelimiterPatterns[0])) foundDelimiter = true
-            if (foundDelimiter) titleWordsStartingWithDelimiter.push(word)
-        } else if (segmentDelimiterPatterns.length === 2) {
-            if (
-                word.match(firstPattern) &&
-                !isLastWord(index, words) &&
-                words[index + 1].match(secondPattern)
-            )
-                foundDelimiter = true
-            if (foundDelimiter) titleWordsStartingWithDelimiter.push(word)
-        }
-    })
-
-    const segmentWords = []
-    let isEndFound = false
-    titleWordsStartingWithDelimiter.forEach((word, index, words) => {
-        if (isEndOfTitleSegment(word, index, words, searchDirection)) isEndFound = true
-        if (!isEndFound) segmentWords.push(word)
-    })
-
-    return getStringFromPaddedArray(segmentWords, searchDirection === "backwards")
-}
-
-function getVariantDescriptionFromTitle(title) {
-    return title.match(patterns.variant) !== null
-        ? getSegmentFromTitle(title, [patterns.variant], "backwards")
-        : ""
-}
-
-function getCoverDescriptionFromTitle(title) {
-    return title.match(patterns.coverAsEnd) !== null
-        ? getSegmentFromTitle(title, [patterns.cover], "backwards")
-        : ""
-}
-
-function getCoverLetterDescriptionFromTitle(title) {
-    return title.match(patterns.coverLetter) !== null
-        ? getSegmentFromTitle(title, [patterns.cover, patterns.letter], "forwards")
-        : ""
-}
-
-function getAdditionalDescriptionsFromTitle(title) {
-    const descriptions = []
-    const marvelSelect = title.match(patterns.marvelSelect)
-    const slipcaseEdition = title.match(patterns.slipcaseEdition)
-    const slipcase = title.match(patterns.slipcase)
-    if (marvelSelect !== null) descriptions.push(marvelSelect[0])
-    if (slipcaseEdition !== null) descriptions.push(slipcaseEdition[0])
-    if (slipcase !== null && slipcaseEdition === null) descriptions.push(slipcase[0])
-    return descriptions
-}
-
-function getAdditionalSubtitle(title) {
-    const subtitles = []
-    const monthYearPack = title.match(patterns.monthYearPack)
-    if (monthYearPack !== null) subtitles.push(monthYearPack[0])
-
-    const seasonSpecialYear = title.match(patterns.seasonSpecialYear)
-    if (seasonSpecialYear !== null) subtitles.push(seasonSpecialYear[0])
-
-    if (subtitles.length < 1) subtitles.push("")
-    if (subtitles.length > 1)
-        logger.warn("! Multiple subtitles found for comic, needs manual parsing")
-
-    return subtitles[0]
-}
-
-function getCleanedVariantDescription(descriptions) {
-    const itemsToClean = [
-        { pattern: patterns.adventure, replacement: " Adventure " },
-        { pattern: patterns.anniversary, replacement: " Anniversary " },
-        { pattern: patterns.blackAndWhite, replacement: " Black & White " },
-        { pattern: patterns.collection, replacement: " Collection " },
-        { pattern: patterns.cover, replacement: " Cover " },
-        { pattern: patterns.directMarket, replacement: " Direct Market " },
-        { pattern: patterns.deluxe, replacement: " Deluxe " },
-        { pattern: patterns.edition, replacement: " Edition " },
-        { pattern: patterns.editionWithParen, replacement: " Edition) " },
-        { pattern: patterns.finalOrderCutoff, replacement: " " },
-        { pattern: patterns.kingInBlack, replacement: " King in Black " },
-        { pattern: patterns.limited, replacement: " Limited " },
-        { pattern: patterns.marvelSelect, replacement: " Marvel Select Edition " },
-        { pattern: patterns.ofThe, replacement: " of the " },
-        { pattern: patterns.original, replacement: " Original " },
-        { pattern: patterns.r, replacement: " " },
-        { pattern: patterns.signature, replacement: " Signature " },
-        { pattern: patterns.trailingParentheses, replacement: " " },
-        { pattern: patterns.variant, replacement: " Variant " },
-        { pattern: patterns.years, replacement: " Years " },
-    ]
-
-    const cleanedDescriptions = []
-    descriptions.forEach((description) => {
-        let newDescription = description
-        newDescription = ` ${newDescription} `
-        itemsToClean.forEach(
-            (item) => (newDescription = newDescription.replace(item.pattern, item.replacement))
-        )
-        newDescription = toProperCasing(newDescription)
-        newDescription = newDescription.trim()
-        if (newDescription !== "") cleanedDescriptions.push(newDescription)
-    })
-
-    return cleanedDescriptions.join("; ")
-}
-
-function parseVariantDescriptionFromTitle(parsedComic) {
-    parsedComic.variantDescription = getVariantDescriptionFromTitle(parsedComic.title)
-    parsedComic.title = removeSegmentFromTitle(parsedComic.title, parsedComic.variantDescription)
-    parsedComic.coverDescription = getCoverDescriptionFromTitle(parsedComic.title)
-    parsedComic.title = removeSegmentFromTitle(parsedComic.title, parsedComic.coverDescription)
-    parsedComic.coverLetterDescription = getCoverLetterDescriptionFromTitle(parsedComic.title)
-    parsedComic.title = removeSegmentFromTitle(
-        parsedComic.title,
-        parsedComic.coverLetterDescription
-    )
-    parsedComic.additionalDescriptions = getAdditionalDescriptionsFromTitle(parsedComic.title)
-    parsedComic.additionalDescriptions.forEach((description) => {
-        parsedComic.title = removeSegmentFromTitle(parsedComic.title, description)
-    })
-
-    const variantDescription = getCleanedVariantDescription([
-        parsedComic.coverLetterDescription,
-        parsedComic.variantDescription,
-        parsedComic.coverDescription,
-        ...parsedComic.additionalDescriptions,
-    ])
-
-    return variantDescription ? variantDescription : null
-}
-
-function removeSegmentFromTitle(title, segment) {
-    return title.replace(segment, " ")
-}
-
-function getTrailingWordsFromTitle(title, itemNumber) {
-    let trailingWords = ""
-    if (!itemNumber)
-        logger.error(
-            "! Item Number expected but not found, skipping retrieval of trailing words from title."
-        )
-    else {
-        const regExpItemNumber = itemNumber.replace("(", "\\(").replace(")", "\\)").trim()
-        const match = new RegExp(` ${regExpItemNumber} ((\\w+ )+)`, "gi")
-        const itemNumberWithTrailingWords = title.match(match)
-        trailingWords =
-            itemNumberWithTrailingWords !== null
-                ? itemNumberWithTrailingWords[0].replace(itemNumber, " ").trim()
-                : ""
-        if (trailingWords)
-            logger.warn(
-                "! There were trailing words found in the title, they may need to be manually parsed."
-            )
-    }
-
-    return trailingWords
-}
-
 function removeUnneededWordsFromTitle(title) {
     const itemsToRemove = [
         { pattern: patterns.mature, replacement: " " },
@@ -663,66 +400,6 @@ function removeUnneededWordsFromTitle(title) {
     )
 
     return cleanedTitle
-}
-
-function getSubtitleFromTitle(title) {
-    function isFormatOrNumber(word) {
-        return (
-            word.match(patterns.formatNumber) !== null ||
-            word.match(patterns.formatAndNumberTypes) !== null ||
-            word.match(patterns.number) !== null
-        )
-    }
-
-    const words = getTitleAsPaddedArray(title, true)
-    const subtitleWords = []
-    let isEndReached = false
-    words.forEach((word) => {
-        if (isFormatOrNumber(word)) isEndReached = true
-        if (!isEndReached) subtitleWords.push(word)
-    })
-
-    return getStringFromPaddedArray(subtitleWords, true)
-}
-
-function getCleanedSubtitle(subtitle, creators) {
-    function removeTrailingCreatorNamesFromSubtitle(creators, subtitleArray) {
-        const joinedCreatorNames = creators
-            .reduce((acc, curr) => {
-                const nameParts = curr.name.split(" ")
-                nameParts.forEach((part) => acc.push(part))
-                return acc
-            }, [])
-            .join("|")
-        return getStringFromPaddedArray(
-            subtitleArray.filter(
-                (word) => word.match(new RegExp(` (${joinedCreatorNames}) `, "ig")) === null
-            )
-        )
-    }
-
-    const wordsToClean = [
-        { pattern: patterns.adventure, replacement: " Adventure " },
-        { pattern: patterns.collection, replacement: " Collection " },
-        { pattern: patterns.directMarket, replacement: " " },
-        { pattern: patterns.finalOrderCutoff, replacement: " " },
-        { pattern: patterns.kingInBlack, replacement: " King in Black " },
-        { pattern: patterns.ofThe, replacement: " of the " },
-        { pattern: patterns.original, replacement: " Original " },
-        { pattern: patterns.years, replacement: " Years " },
-    ]
-
-    const subtitleArray = getTitleAsPaddedArray(subtitle, false)
-    let cleanedSubtitle =
-        creators && creators.length > 0
-            ? removeTrailingCreatorNamesFromSubtitle(creators, subtitleArray)
-            : ""
-    wordsToClean.forEach(
-        (word) => (cleanedSubtitle = cleanedSubtitle.replace(word.pattern, word.replacement))
-    )
-    cleanedSubtitle = toProperCasing(cleanedSubtitle)
-
-    return cleanedSubtitle ? cleanedSubtitle.trim() : null
 }
 
 function getCleanedTitle(title) {
@@ -763,74 +440,72 @@ function getCleanedTitle(title) {
     return cleanedTitle
 }
 
-function isFilterOut(comic) {
-    const test = comic.title.match(patterns.atlasSignatureEdition)
-    return comic.title.match(patterns.atlasSignatureEdition) !== null
+function getCleanedSeriesName(name, comic) {
+    let parsedName = prepareTitleForParsing(name)
+    parsedName = removeSegmentFromTitle(parsedName, comic.unparsedVariantDescription)
+    parsedName = removeSegmentFromTitle(parsedName, comic.unparsedCoverDescription)
+    parsedName = removeSegmentFromTitle(parsedName, comic.unparsedCoverLetterDescription)
+    comic.unparsedAdditionalDescriptions.forEach((description) => {
+        parsedName = removeSegmentFromTitle(parsedName, description)
+    })
+    parsedName = removeSegmentFromTitle(parsedName, comic.titleOverflow)
+    parsedName = removeUnneededWordsFromTitle(parsedName)
+    parsedName = removeSegmentFromTitle(parsedName, comic.unparsedSubtitle)
+    parsedName = removeSegmentFromTitle(parsedName, comic.unparsedItemNumber)
+
+    return getCleanedTitle(parsedName)
+}
+
+function getParsedSeries(series, comic) {
+    const parsedSeries = {
+        id: null,
+        link: series && series.link ? series.link : null,
+    }
+    parsedSeries.name =
+        parsedSeries.link && parsedSeries.name
+            ? getCleanedSeriesName(parsedSeries.name, comic)
+            : comic.title
+    return parsedSeries
 }
 
 function getParsedComic(comic) {
     logger.info(`# Parsing ${comic.title} scraped from ${comic.link}`)
     const parsedComic = {}
-
     parsedComic.unparsedCreators = comic.creators
     parsedComic.unparsedTitle = comic.title
     parsedComic.link = comic.link
     parsedComic.diamondID = comic.diamondID
-    parsedComic.publisher = getPublisher(comic.publisher)
-    parsedComic.releaseDate = getFormattedReleaseDate(comic.releaseDate)
     parsedComic.coverPrice = comic.coverPrice
     parsedComic.cover = comic.coverURL
     parsedComic.description = comic.description
-    parsedComic.creators = getParsedCreatorsFromNodes(comic.creators)
     parsedComic.format = comic.format
+    parsedComic.publisher = getParsedPublisher(comic.publisher)
+    parsedComic.releaseDate = getFormattedReleaseDate(comic.releaseDate)
+    parsedComic.creators = getParsedCreatorsFromNodes(comic.creators)
     parsedComic.solicitationDate = getSolicitDateFromDiamondID(parsedComic.diamondID)
-    if (!comic.title) logger.error(`! The comic title was not found`)
-    else {
-        parsedComic.title = prepareTitleForParsing(comic.title)
-        parsedComic.printingNumber = getPrintingNumberFromTitle(comic.title)
-        parsedComic.coverLetter = getCoverLetterFromTitle(comic.title)
-        parsedComic.variantType = getVariantTypeFromTitle(parsedComic.title)
-        parsedComic.ageRating = parsedComic.title.match(patterns.mature) ? "MA" : ""
-        parsedComic.isMiniSeries = parsedComic.title.match(patterns.miniSeries) !== null
-        if (parsedComic.isMiniSeries)
-            parsedComic.miniSeriesLimit = getMiniSeriesLimitFromTitle(parsedComic.title)
-        else parsedComic.miniSeriesLimit = 0
-        parsedComic.isOneShot = parsedComic.title.match(patterns.oneShot) !== null
-        if (parsedComic.isOneShot)
-            logger.warn("! Comic is one shot, there may be a one shot subtitle to parse.")
-        if (parsedComic.format !== "Comic")
-            parsedComic.format = getFormatFromTitle(parsedComic.title)
-        parsedComic.itemNumber = getItemNumberFromTitle(parsedComic.title, parsedComic.format)
-        parsedComic.variantDescription = parseVariantDescriptionFromTitle(parsedComic)
-        parsedComic.title = removeUnneededWordsFromTitle(parsedComic.title)
-        if (parsedComic.format === "Comic") {
-            parsedComic.titleOverflow = getTrailingWordsFromTitle(
-                parsedComic.title,
-                parsedComic.itemNumber
-            )
-            parsedComic.title = removeSegmentFromTitle(parsedComic.title, parsedComic.titleOverflow)
-            parsedComic.subtitle = getAdditionalSubtitle(parsedComic.title)
-            parsedComic.title = removeSegmentFromTitle(parsedComic.title, parsedComic.subtitle)
-            parsedComic.subtitle = getCleanedSubtitle(parsedComic.subtitle, parsedComic.creators)
-        } else {
-            parsedComic.subtitle = getSubtitleFromTitle(parsedComic.title)
-            parsedComic.title = removeSegmentFromTitle(parsedComic.title, parsedComic.subtitle)
-            parsedComic.subtitle = getCleanedSubtitle(parsedComic.subtitle, parsedComic.creators)
-        }
-        parsedComic.title = removeSegmentFromTitle(parsedComic.title, parsedComic.itemNumber)
-        parsedComic.itemNumber = getCleanedItemNumber(parsedComic.itemNumber)
-        parsedComic.title = getCleanedTitle(parsedComic.title)
-        parsedComic.filterOut = isFilterOut(parsedComic)
-        parsedComic.series = {
-            id: null,
-            link: comic.series && comic.series.link ? comic.series.link : null,
-        }
-        parsedComic.series.name = parsedComic.series.link ? comic.series.name : parsedComic.title
-        if (!parsedComic.series.link) {
-            //TODO clean series name
-        }
-    }
-    if (parsedComic.filterOut) logger.info("# Filtered out this release.")
+    if (!comic.title)
+        throw new Error(`! The comic title was not found for comic with link ${parsedComic.link}`)
+    parsedComic.title = prepareTitleForParsing(comic.title)
+    parsedComic.printingNumber = getPrintingNumberFromTitle(parsedComic.title)
+    parsedComic.coverLetter = getCoverLetterFromTitle(parsedComic.title)
+    parsedComic.variantTypes = getVariantTypesFromTitle(parsedComic.title)
+    parsedComic.ageRating = getAgeRatingFromTitle(parsedComic.title)
+    parsedComic.isMiniSeries = getIsMiniSeriesFromTitle(parsedComic.title)
+    parsedComic.miniSeriesLimit = getMiniSeriesLimitFromTitle(
+        parsedComic.title,
+        parsedComic.isMiniSeries
+    )
+    parsedComic.isOneShot = getIsOneShotFromTitle(parsedComic.title)
+    if (parsedComic.format !== "Comic") parsedComic.format = getFormatFromTitle(parsedComic.title)
+    parsedComic.unparsedItemNumber = getItemNumberFromTitle(parsedComic.title, parsedComic.format)
+    parsedComic.variantDescription = parseVariantDescriptionFromTitle(parsedComic)
+    parsedComic.title = removeUnneededWordsFromTitle(parsedComic.title)
+    parsedComic.subtitle = parseSubtitleFromTitle(parsedComic)
+    parsedComic.title = removeSegmentFromTitle(parsedComic.title, parsedComic.unparsedItemNumber)
+    parsedComic.itemNumber = getCleanedItemNumber(parsedComic.unparsedItemNumber)
+    parsedComic.title = getCleanedTitle(parsedComic.title)
+    parsedComic.filterOut = isFilterOut(parsedComic)
+    parsedComic.series = getParsedSeries(comic.series, parsedComic.title)
 
     return parsedComic
 }

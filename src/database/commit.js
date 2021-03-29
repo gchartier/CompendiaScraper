@@ -13,13 +13,20 @@ module.exports = (async () => {
     try {
         const comics = readReleasesFromStagingFile()
         for (const comic of comics) {
-            comic.publisher.id = await commitPublisher(client, comic.publisher.name)
-            comic.series.id = await commitSeries(client, comic.series.name, publisherID)
-            comic.creators =
-                comic.creators && comic.creators.length > 0
-                    ? await commitCreators(client, comic.creators)
-                    : []
-            comic.id = await commitComic(client, comic)
+            try {
+                comic.publisher.id = await commitPublisher(client, comic.publisher.name)
+                comic.series.id = await commitSeries(client, comic.series.name, publisherID)
+                comic.creators =
+                    comic.creators && comic.creators.length > 0
+                        ? await commitCreators(client, comic.creators)
+                        : []
+                comic.id = await commitComic(client, comic)
+                await commitComicCreators(client, comic.creators, comic.id)
+            } catch (error) {
+                logger.error(
+                    `! Error in commiting release with title ${comic.title} to DB: ${error.message}`
+                )
+            }
         }
     } catch (error) {
         logger.error(`! Error in commiting releases to DB: ${error.message}`)

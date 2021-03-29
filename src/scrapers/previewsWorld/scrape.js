@@ -4,7 +4,6 @@ const sleep = require("../../utils/sleep")
 const logger = require("../../utils/logger.js")
 const getParsedComic = require("./parse/comic.js")
 const toProperCasing = require("../../utils/toProperCasing")
-
 const SLEEP_SECONDS = 4
 
 async function getScrapedReleaseLinksAndFormats() {
@@ -134,11 +133,18 @@ async function getScrapedPreviewsWorldReleases() {
     const filteredScrapedReleases = filterOutReleasesWithFlaggedPublishers(scrapedReleases)
     const releases = []
     filteredScrapedReleases.forEach((release, index) => {
-        logger.info(`# Release ${index + 1} of ${filteredScrapedReleases.length}`)
-        const parsedRelease = getParsedComic(release)
-        parsedRelease._releaseNumber = index + 1
-        if (parsedRelease.filterOut === false) releases.push(parsedRelease)
-        logger.info(`# Finished release ${index + 1} of ${filteredScrapedReleases.length} \n`)
+        try {
+            logger.info(`# Release ${index + 1} of ${filteredScrapedReleases.length}`)
+            const parsedRelease = getParsedComic(release)
+            parsedRelease._releaseNumber = index + 1
+            if (parsedRelease.filterOut === false) releases.push(parsedRelease)
+            else logger.info("# Filtered out this release.")
+            logger.info(`# Finished release ${index + 1} of ${filteredScrapedReleases.length} \n`)
+        } catch (error) {
+            logger.error(
+                `! Error occurred while parsing comic from ${release.link}: ${error.message}`
+            )
+        }
     })
 
     logger.info(`# Finished retrieving Previews World new releases`)
