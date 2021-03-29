@@ -9,7 +9,7 @@ function getPublisher(publisher) {
     if (!publisher)
         logger.error("! No publisher found from parsed data. Manual addition of publisher needed.")
 
-    return { id: null, name: publisher && publisher.name ? publisher.name : "" }
+    return { id: null, name: publisher && publisher.name ? publisher.name : null }
 }
 
 function prepareTitleForParsing(title) {
@@ -17,7 +17,7 @@ function prepareTitleForParsing(title) {
 }
 
 function getSolicitDateFromDiamondID(diamondID) {
-    let solicitationDate = ""
+    let solicitationDate = null
     if (!diamondID || diamondID.length < 5)
         logger.error(`! Could not get the the solicitation date from Diamond ID`)
     else {
@@ -72,19 +72,17 @@ function getFormatFromTitle(title) {
 }
 
 function getMiniSeriesLimitFromTitle(title) {
-    let miniSeriesLimit = ""
+    let miniSeriesLimit = null
     const miniSeriesMatch = title.match(patterns.miniSeries)
     if (miniSeriesMatch !== null) {
         const miniSeriesInfo = miniSeriesMatch[0].toString()
         miniSeriesLimit = miniSeriesInfo.substring(5, miniSeriesInfo.length - 2)
 
-        if (!miniSeriesLimit || isNaN(miniSeriesLimit)) {
-            logger.error("! Expected to find mini series limit from title but didn't find it")
-            miniSeriesLimit = "0"
-        }
+        if (!miniSeriesLimit || isNaN(miniSeriesLimit))
+            logger.error("! Expected to find mini series limit from title but didn't")
     }
 
-    return parseInt(miniSeriesLimit)
+    return miniSeriesLimit ? parseInt(miniSeriesLimit) : null
 }
 
 function getItemNumberFromTitle(title, format) {
@@ -331,8 +329,8 @@ function getItemNumberFromTitle(title, format) {
     })
 
     if (itemNumbers.length === 0) {
-        logger.warn("! Item number not found from title. Setting as blank.")
         itemNumbers.push("")
+        logger.warn("! Item number not found from title. Setting as blank.")
     } else if (itemNumbers.length > 1 && isException(itemNumbers, format) === false)
         logger.error("! More than one item number match was found from the title.")
 
@@ -349,11 +347,11 @@ function getCleanedItemNumber(itemNumber) {
             (num) => (cleanedItemNum = cleanedItemNum.replace(num, ` #${num.trim()} `))
         )
     cleanedItemNum = toProperCasing(cleanedItemNum).trim()
-    return cleanedItemNum
+    return cleanedItemNum ? cleanedItemNum : null
 }
 
 function getCoverLetterFromTitle(title) {
-    let coverLetter = ""
+    let coverLetter = null
     const coverLetterMatch = title.match(patterns.coverLetter)
     if (coverLetterMatch !== null) {
         const matchString = coverLetterMatch.toString()
@@ -381,7 +379,7 @@ function getVariantTypeFromTitle(title) {
 
     if (variantTypes.length > 1) logger.error("! More than one variant type found for this comic.")
 
-    return variantTypes.length < 1 ? null : variantTypes[0]
+    return variantTypes.length > 0 ? variantTypes[0] : null //TODO finish variantType as variantTypes
 }
 
 function getTitleAsPaddedArray(title, reversed) {
@@ -604,20 +602,18 @@ function parseVariantDescriptionFromTitle(parsedComic) {
         parsedComic.title = removeSegmentFromTitle(parsedComic.title, description)
     })
 
-    return getCleanedVariantDescription([
+    const variantDescription = getCleanedVariantDescription([
         parsedComic.coverLetterDescription,
         parsedComic.variantDescription,
         parsedComic.coverDescription,
         ...parsedComic.additionalDescriptions,
     ])
+
+    return variantDescription ? variantDescription : null
 }
 
-function removeSegmentFromTitle(title, description) {
-    return title.replace(description, " ")
-}
-
-function removeItemNumberFromTitle(title, itemNumber) {
-    return title.replace(itemNumber, " ")
+function removeSegmentFromTitle(title, segment) {
+    return title.replace(segment, " ")
 }
 
 function getTrailingWordsFromTitle(title, itemNumber) {
@@ -679,14 +675,14 @@ function getSubtitleFromTitle(title) {
     }
 
     const words = getTitleAsPaddedArray(title, true)
-    const subtitle = []
+    const subtitleWords = []
     let isEndReached = false
     words.forEach((word) => {
         if (isFormatOrNumber(word)) isEndReached = true
-        if (!isEndReached) subtitle.push(word)
+        if (!isEndReached) subtitleWords.push(word)
     })
 
-    return getStringFromPaddedArray(subtitle, true)
+    return getStringFromPaddedArray(subtitleWords, true)
 }
 
 function getCleanedSubtitle(subtitle, creators) {
@@ -717,13 +713,16 @@ function getCleanedSubtitle(subtitle, creators) {
     ]
 
     const subtitleArray = getTitleAsPaddedArray(subtitle, false)
-    let cleanedSubtitle = removeTrailingCreatorNamesFromSubtitle(creators, subtitleArray)
+    let cleanedSubtitle =
+        creators && creators.length > 0
+            ? removeTrailingCreatorNamesFromSubtitle(creators, subtitleArray)
+            : ""
     wordsToClean.forEach(
         (word) => (cleanedSubtitle = cleanedSubtitle.replace(word.pattern, word.replacement))
     )
     cleanedSubtitle = toProperCasing(cleanedSubtitle)
 
-    return cleanedSubtitle.trim()
+    return cleanedSubtitle ? cleanedSubtitle.trim() : null
 }
 
 function getCleanedTitle(title) {
@@ -790,7 +789,6 @@ function getParsedComic(comic) {
         parsedComic.title = prepareTitleForParsing(comic.title)
         parsedComic.printingNumber = getPrintingNumberFromTitle(comic.title)
         parsedComic.coverLetter = getCoverLetterFromTitle(comic.title)
-        parsedComic.versionOf = null
         parsedComic.variantType = getVariantTypeFromTitle(parsedComic.title)
         parsedComic.ageRating = parsedComic.title.match(patterns.mature) ? "MA" : ""
         parsedComic.isMiniSeries = parsedComic.title.match(patterns.miniSeries) !== null
@@ -819,13 +817,13 @@ function getParsedComic(comic) {
             parsedComic.title = removeSegmentFromTitle(parsedComic.title, parsedComic.subtitle)
             parsedComic.subtitle = getCleanedSubtitle(parsedComic.subtitle, parsedComic.creators)
         }
-        parsedComic.title = removeItemNumberFromTitle(parsedComic.title, parsedComic.itemNumber)
+        parsedComic.title = removeSegmentFromTitle(parsedComic.title, parsedComic.itemNumber)
         parsedComic.itemNumber = getCleanedItemNumber(parsedComic.itemNumber)
         parsedComic.title = getCleanedTitle(parsedComic.title)
         parsedComic.filterOut = isFilterOut(parsedComic)
         parsedComic.series = {
             id: null,
-            link: comic.series && comic.series.link ? comic.series.link : "",
+            link: comic.series && comic.series.link ? comic.series.link : null,
         }
         parsedComic.series.name = parsedComic.series.link ? comic.series.name : parsedComic.title
         if (!parsedComic.series.link) {

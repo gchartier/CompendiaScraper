@@ -108,7 +108,9 @@ function getParsedCreatorsFromNodes(nodes) {
             if (isLastNode(nodes, index)) addScrapedCreatorToList(scrapedCreator, creators)
         })
 
-        return getFilteredUniqueCreators(creators)
+        const parsedCreators = getFilteredUniqueCreators(creators)
+
+        return parsedCreators.length > 0 ? parsedCreators : null
     }
 }
 

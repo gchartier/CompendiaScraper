@@ -1,10 +1,10 @@
 require("dotenv").config()
-const getSeriesID = require("./series.js")
+const commitSeries = require("./series.js")
 const db = require("./connect.js").instance
 const logger = require("../utils/logger.js")
-const getPublisherID = require("./publisher.js")
-const insertComicAndGetID = require("./comic.js")
-const getCreatorsWithIDs = require("./creator.js")
+const commitPublisher = require("./publisher.js")
+const commitComic = require("./comic.js")
+const commitCreators = require("./creator.js")
 const { readReleasesFromStagingFile } = require("../utils/stagedReleases.js")
 
 module.exports = (async () => {
@@ -13,25 +13,20 @@ module.exports = (async () => {
     try {
         const comics = readReleasesFromStagingFile()
         for (const comic of comics) {
-            const publisherID = await getPublisherID(client, comic.publisher.name)
-            const seriesID = await getSeriesID(client, comic.series.name, publisherID)
-            comic.series.ID = seriesID
-            const creators =
+            comic.publisher.id = await commitPublisher(client, comic.publisher.name)
+            comic.series.id = await commitSeries(client, comic.series.name, publisherID)
+            comic.creators =
                 comic.creators && comic.creators.length > 0
-                    ? await getCreatorsWithIDs(client, comic.creators)
+                    ? await commitCreators(client, comic.creators)
                     : []
-            comic.creators = creators
-            const comicID = await insertComicAndGetID(client, comic)
-            //const coverURL = comic.cover
-            // comic.cover = ""
-            // const uploadedCover = await parseCover(coverURL, Math.random())
-            // update comic cover in db
+            comic.id = await commitComic(client, comic)
         }
     } catch (error) {
-        logger.error(`! Error in commiting to DB: ${error}`)
+        logger.error(`! Error in commiting releases to DB: ${error.message}`)
     } finally {
         await client.end()
         await client.release()
+        logger.info("# Disconnected from DB")
         process.exit()
     }
 })()

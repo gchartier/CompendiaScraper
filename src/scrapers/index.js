@@ -9,7 +9,7 @@ module.exports = (async () => {
         releases.push.apply(releases, await getScrapedPreviewsWorldReleases())
         writeReleasesToStagingFile(releases)
     }
-    catch(error) {
+    catch (error) {
         logger.error(`! ${error.message}`)
     }
     finally {

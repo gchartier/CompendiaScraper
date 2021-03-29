@@ -65,9 +65,7 @@ async function parseCover(coverURL, comicID) {
         return coverS3URL
     } catch (error) {
         logger.error(
-            `! Failed download image and upload to S3 for ${coverURL} with error: ${
-                typeof error === "Object" ? JSON.stringify(error) : error
-            }`
+            `! Failed download image and upload to S3 for ${coverURL} with error: ${error.message}`
         )
     }
 }
