@@ -6,7 +6,8 @@
     "scripts": {
         "parse": "node src/scrapers/index.js",
         "commit": "node src/database/commit.js",
-        "test": "node src/scrapers/previewsWorld/test/manualTest.js",
+        "test-releases": "node src/scrapers/previewsWorld/test/manualTest.js",
+        "test": "echo \"Error: no test specified\" && exit 1",
         "start-watch": "nodemon src/scrapers/index.js"
     },
     "keywords": [],

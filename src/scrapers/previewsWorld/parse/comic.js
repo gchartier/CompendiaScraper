@@ -476,12 +476,12 @@ function getParsedComic(comic) {
     const parsedComic = {}
     parsedComic.unparsedCreators = comic.creators
     parsedComic.unparsedTitle = comic.title
+    parsedComic.unparsedFormat = comic.format
     parsedComic.link = comic.link
     parsedComic.diamondID = comic.diamondID
     parsedComic.coverPrice = comic.coverPrice
     parsedComic.cover = comic.coverURL
     parsedComic.description = comic.description
-    parsedComic.format = comic.format
     parsedComic.publisher = getParsedPublisher(comic.publisher)
     parsedComic.releaseDate = getFormattedReleaseDate(comic.releaseDate)
     parsedComic.creators = getParsedCreatorsFromNodes(comic.creators)
@@ -499,7 +499,8 @@ function getParsedComic(comic) {
         parsedComic.isMiniSeries
     )
     parsedComic.isOneShot = getIsOneShotFromTitle(parsedComic.title)
-    if (parsedComic.format !== "Comic") parsedComic.format = getFormatFromTitle(parsedComic.title)
+    parsedComic.format =
+        parsedComic.unparsedFormat !== "Comic" ? getFormatFromTitle(parsedComic.title) : "Comic"
     parsedComic.unparsedItemNumber = getItemNumberFromTitle(parsedComic.title, parsedComic.format)
     parsedComic.variantDescription = parseVariantDescriptionFromTitle(parsedComic)
     parsedComic.title = removeUnneededWordsFromTitle(parsedComic.title)
