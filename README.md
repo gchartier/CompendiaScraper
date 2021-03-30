@@ -2,7 +2,7 @@
 
 ## About
 
-This web scraper crawls [PreviewsWorld's New Releases](https://www.previewsWorld.com/NewReleases) page every week for the American comic books that are slated for release in comic shops that week, and parses them into JSON data. After the parse is finished, all of the comics are saved into a "Staged Releases" JSON file where they can be manually reviewed for any errors and then committed to a PostgreSQL database with the covers hosted on AWS S3. 
+This web scraper crawls [PreviewsWorld's New Releases](https://www.previewsWorld.com/NewReleases) page every week for the American comic books that are slated for release in comic shops that week, and parses them into JSON data. After the parse is finished, all of the comics are saved into a "Staged Releases" JSON file where they can be manually reviewed for any errors and then committed to a PostgreSQL database with the covers hosted on AWS S3. It is used by [Compendia](https://github.com/gchartier/Compendia), as the source of it's data.
 
 ## How to Use
 
@@ -37,3 +37,12 @@ I researched all of the possible ways I could retrieve this data, and eventually
 ## Result
 
 The scraper works better than I could have hoped for despite many struggles I ran into with inconsistencies in the data. It is used every week by me to retrieve the data needed for Compendia to be useful.
+
+
+## Future Development
+
+I will continue to maintain this as it is a crucial part of [Compendia](https://github.com/gchartier/Compendia).
+### Plans for future developments:
+-   Host on AWS to be run every week at the same time so that it does not need to be manually run.
+-   Test thoroughly
+-   Automate error reporting to email or mobile push notifications so that I am aware of any parsing errors that need to be corrected
