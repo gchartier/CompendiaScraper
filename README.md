@@ -46,3 +46,4 @@ I will continue to maintain this as it is a crucial part of [Compendia](https://
 -   Host on AWS to be run every week at the same time so that it does not need to be manually run.
 -   Test thoroughly
 -   Automate error reporting to email or mobile push notifications so that I am aware of any parsing errors that need to be corrected
+-   Simplify format and item number patterns to make it more scalable, readable, and maintainable
