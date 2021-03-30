@@ -21,13 +21,8 @@ function removeSegmentFromTitle(title, segment) {
     return title.replace(segment, " ")
 }
 
-function isFilterOut(comic) {
-    return comic.title.match(patterns.atlasSignatureEdition) !== null
-}
-
 module.exports = {
     getTitleAsPaddedArray,
     getStringFromPaddedArray,
     removeSegmentFromTitle,
-    isFilterOut,
 }

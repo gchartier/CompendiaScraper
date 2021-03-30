@@ -1,32 +1,29 @@
+const SLEEP_SECONDS = 4
 const $ = require("cheerio")
 const axios = require("axios")
 const sleep = require("../../utils/sleep")
 const logger = require("../../utils/logger.js")
 const getParsedComic = require("./parse/comic.js")
-const toProperCasing = require("../../utils/toProperCasing")
-const SLEEP_SECONDS = 4
+const convertToProperCasing = require("../../utils/convertToProperCasing")
 
 async function getScrapedReleaseLinksAndFormats() {
-    const newReleasesURL = "https://www.previewsworld.com/NewReleases"
+    const newReleasesURL = "https://www.previewsworld.com/NewReleases?releaseDate=03/24/2021"
     const { data: newReleasesResponse } = await axios.get(newReleasesURL)
     const newReleaseLinks = $(
         '.nrGalleryItem[dmd-cat="1"] .nrGalleryItemDmdNo a, .nrGalleryItem[dmd-cat="3"] .nrGalleryItemDmdNo a',
         newReleasesResponse
-    )
+    ).toArray()
     const newReleaseFormats = $(
         '.nrGalleryItem[dmd-cat="1"], .nrGalleryItem[dmd-cat="3"]',
         newReleasesResponse
-    )
+    ).map((i, el) => $(el).attr("dmd-cat"))
 
     if (newReleaseLinks.length !== newReleaseFormats.length)
-        throw new Error("Retrieved links and formats do not have equal lengths")
+        throw new Error("! Retrieved links and formats do not have equal lengths")
 
-    const linksAndFormats = []
-    for (let i = 0; i < 2; i++)
-        linksAndFormats.push({
-            link: newReleaseLinks[i].attribs.href,
-            format: newReleaseFormats[i],
-        })
+    const linksAndFormats = newReleaseLinks.map((link, index) => {
+        return { link: link.attribs.href, format: newReleaseFormats[index] }
+    })
 
     return linksAndFormats
 }
@@ -36,9 +33,10 @@ async function getScrapedSeriesName(seriesLink) {
     await sleep(SLEEP_SECONDS)
     const { data: seriesNameHTML } = await axios.get(seriesLink)
     if (!seriesNameHTML)
-        logger.warn(`! Failed HTML request to ${seriesLink} and could not retrieve series name`)
+        logger.warn(`! Failed request to ${seriesLink} and could not retrieve series name`)
+    logger.info(`# Scraped series from ${seriesLink}`)
 
-    return toProperCasing($(".Title", seriesNameHTML).text().slice(8))
+    return convertToProperCasing($(".Title", seriesNameHTML).text().slice(8))
 }
 
 async function getScrapedRelease(releaseLink, releaseFormat) {
@@ -48,16 +46,14 @@ async function getScrapedRelease(releaseLink, releaseFormat) {
     logger.info(`# Requesting release from ${url}`)
     await sleep(SLEEP_SECONDS)
     const { data: newReleaseResponse } = await axios.get(url)
-
     const title = $(".Title", newReleaseResponse).text()
-    const seriesLink = null //TODO uncomment $(".ViewSeriesItemsLink", newReleaseResponse).attr("href")
-    const seriesName = seriesLink ? ` ${await getScrapedSeriesName(baseURL + seriesLink)} ` : ""
-    if (!seriesLink)
+    const seriesLink = $(".ViewSeriesItemsLink", newReleaseResponse).attr("href")
+    const seriesName = seriesLink ? `${await getScrapedSeriesName(baseURL + seriesLink)}` : ""
+    if (!seriesLink || !seriesName)
         logger.warn(
             "! Could not retrieve series name from series link. Series name will be retrieved from title."
         )
-
-    logger.info(`# Scraped ${url} with title ${title}:`)
+    logger.info(`# Scraped ${url} with title ${title}\n`)
 
     const scrapedRelease = {
         link: url,
@@ -66,16 +62,14 @@ async function getScrapedRelease(releaseLink, releaseFormat) {
             name: seriesName,
             link: seriesLink,
         },
-        publisher: { name: toProperCasing($(".Publisher", newReleaseResponse).text()) },
+        publisher: { name: convertToProperCasing($(".Publisher", newReleaseResponse).text()) },
         releaseDate: $(".ReleaseDate", newReleaseResponse).text().slice(10),
         coverPrice: $(".SRP", newReleaseResponse).text().slice(5),
         coverURL: baseURL + $(".mainContentImage .ImageContainer", newReleaseResponse).attr("href"),
         description: $("div.Text", newReleaseResponse)
             .first()
             .contents()
-            .filter(function () {
-                return this.type === "text"
-            })
+            .filter((i, el) => el.type === "text")
             .text()
             .replace(/\s+/g, " ")
             .trim(),
@@ -89,14 +83,18 @@ async function getScrapedRelease(releaseLink, releaseFormat) {
 
 function filterOutReleasesWithFlaggedPublishers(releases) {
     const flaggedPublishers = [
+        "DESIGN STUDIO PRESS",
         "DIGITAL MANGA DISTRIBUTION",
         "DYNAMIC FORCES",
+        "FANFARE PRESENTS PONENT MON",
         "GHOST SHIP",
         "J-NOVEL CLUB",
         "J-NOVEL HEART",
+        "JY",
         "KODANSHA AMERICA",
         "KODANSHA COMICS",
         "ONE PEACE BOOKS",
+        "PIE INTERNATIONAL",
         "SEVEN SEAS ENTERTAINMENT LLC",
         "SQUARE ENIX MANGA",
         "SUBLIME",
@@ -137,8 +135,8 @@ async function getScrapedPreviewsWorldReleases() {
             logger.info(`# Release ${index + 1} of ${filteredScrapedReleases.length}`)
             const parsedRelease = getParsedComic(release)
             parsedRelease._releaseNumber = index + 1
-            if (parsedRelease.filterOut === false) releases.push(parsedRelease)
-            else logger.info("# Filtered out this release.")
+            if (parsedRelease.filterOut) logger.info("# Filtered out this release.")
+            else releases.push(parsedRelease)
             logger.info(`# Finished release ${index + 1} of ${filteredScrapedReleases.length} \n`)
         } catch (error) {
             logger.error(

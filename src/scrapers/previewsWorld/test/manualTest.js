@@ -7,7 +7,7 @@ module.exports = (() => {
         const comics = testComics
         logger.info("### BEGIN TEST DATA ###")
         comics.forEach((comic) => {
-            getParsedComic(comic)
+            console.log(getParsedComic(comic))
         })
         logger.info("### END TEST DATA ###")
     } catch (error) {

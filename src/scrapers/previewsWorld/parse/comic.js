@@ -2,7 +2,6 @@ const {
     getTitleAsPaddedArray,
     getStringFromPaddedArray,
     removeSegmentFromTitle,
-    isFilterOut,
 } = require("./util.js")
 const {
     getCoverLetterFromTitle,
@@ -14,7 +13,7 @@ const patterns = require("../patterns.js")
 const logger = require("../../../utils/logger.js")
 const getParsedCreatorsFromNodes = require("./creator.js")
 const { parseSubtitleFromTitle } = require("./subtitle.js")
-const toProperCasing = require("../../../utils/toProperCasing.js")
+const convertToProperCasing = require("../../../utils/convertToProperCasing.js")
 const getMonthFromAbbreviation = require("../../../utils/getMonth.js")
 
 function getParsedPublisher(publisher) {
@@ -372,7 +371,7 @@ function getCleanedItemNumber(itemNumber) {
         formatNumbers.forEach(
             (num) => (cleanedItemNum = cleanedItemNum.replace(num, ` #${num.trim()} `))
         )
-    cleanedItemNum = toProperCasing(cleanedItemNum).trim()
+    cleanedItemNum = convertToProperCasing(cleanedItemNum).trim()
     return cleanedItemNum ? cleanedItemNum : null
 }
 
@@ -431,7 +430,7 @@ function getCleanedTitle(title) {
     itemsToClean.forEach(
         (item) => (cleanedTitle = cleanedTitle.replace(item.pattern, item.replacement))
     )
-    cleanedTitle = toProperCasing(cleanedTitle).trim()
+    cleanedTitle = convertToProperCasing(cleanedTitle.trim())
 
     if (cleanedTitle.length < 1) logger.error(`! Title is missing.`)
     if (cleanedTitle.match(/\s{2,}/gi))
@@ -466,6 +465,10 @@ function getParsedSeries(series, comic) {
             ? getCleanedSeriesName(parsedSeries.name, comic)
             : comic.title
     return parsedSeries
+}
+
+function isFilterOut(title) {
+    return title.match(patterns.atlasSignatureEdition) !== null
 }
 
 function getParsedComic(comic) {
@@ -503,8 +506,8 @@ function getParsedComic(comic) {
     parsedComic.subtitle = parseSubtitleFromTitle(parsedComic)
     parsedComic.title = removeSegmentFromTitle(parsedComic.title, parsedComic.unparsedItemNumber)
     parsedComic.itemNumber = getCleanedItemNumber(parsedComic.unparsedItemNumber)
+    parsedComic.filterOut = isFilterOut(parsedComic.title)
     parsedComic.title = getCleanedTitle(parsedComic.title)
-    parsedComic.filterOut = isFilterOut(parsedComic)
     parsedComic.series = getParsedSeries(comic.series, parsedComic.title)
 
     return parsedComic

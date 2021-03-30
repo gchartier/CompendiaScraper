@@ -1,12 +1,13 @@
 const patterns = require("../patterns.js")
 const logger = require("../../../utils/logger.js")
+const { removeSegmentFromTitle } = require("./util.js")
+const convertToProperCasing = require("../../../utils/convertToProperCasing.js")
+const { getTitleAsPaddedArray, getStringFromPaddedArray } = require("./util.js")
 
 function getTitleOverflowFromTitle(title, itemNumber) {
     let trailingWords = ""
     if (!itemNumber)
-        logger.error(
-            "! Item Number expected but not found, skipping retrieval of trailing words from title."
-        )
+        logger.error("! Item Number expected but not found, skipping retrieval of title overflow.")
     else {
         const regExpItemNumber = itemNumber.replace("(", "\\(").replace(")", "\\)").trim()
         const match = new RegExp(` ${regExpItemNumber} ((\\w+ )+)`, "gi")
@@ -94,14 +95,14 @@ function getCleanedSubtitle(subtitle, creators) {
     wordsToClean.forEach(
         (word) => (cleanedSubtitle = cleanedSubtitle.replace(word.pattern, word.replacement))
     )
-    cleanedSubtitle = toProperCasing(cleanedSubtitle)
+    cleanedSubtitle = convertToProperCasing(cleanedSubtitle)
 
     return cleanedSubtitle ? cleanedSubtitle.trim() : null
 }
 
 function parseSubtitleFromTitle(comic) {
     if (comic.format === "Comic") {
-        comic.titleOverflow = getTitleOverflowFromTitle(comic.title, comic.itemNumber)
+        comic.titleOverflow = getTitleOverflowFromTitle(comic.title, comic.unparsedItemNumber)
         comic.title = removeSegmentFromTitle(comic.title, comic.titleOverflow)
         comic.unparsedSubtitle = getAdditionalSubtitle(comic.title)
         comic.title = removeSegmentFromTitle(comic.title, comic.unparsedSubtitle)

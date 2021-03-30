@@ -30,7 +30,7 @@ function formatLowercaseWords(str) {
         "With",
     ]
     lowers.forEach((lower) => {
-        lowercasedStr = lowercasedStr.replace(new RegExp(`\\w+ ${lower} `, "ig"), (txt) =>
+        lowercasedStr = lowercasedStr.replace(new RegExp(` ${lower} `, "ig"), (txt) =>
             txt.toLowerCase()
         )
     })
@@ -58,7 +58,7 @@ function formatRomanNumerals(str) {
     )
 }
 
-function toProperCasing(str) {
+function convertToProperCasing(str) {
     let properlyCasedStr = convertToTitleCasing(str)
     properlyCasedStr = formatLowercaseWords(properlyCasedStr)
     properlyCasedStr = formatUppercaseWords(properlyCasedStr)
@@ -66,4 +66,4 @@ function toProperCasing(str) {
     return properlyCasedStr
 }
 
-module.exports = toProperCasing
+module.exports = convertToProperCasing

@@ -3,7 +3,7 @@ const patterns = {
     anniversary: / ANNIV /i,
     artist: /\(A\)/i,
     artistAndCoverArtist: /\(A\/CA\)/i,
-    atlasSignatureEdition: / ((SGN ATLAS ED)|(ATLAS ED)|(ATLAS (((\w+) )+)ED)|(ATLAS (((\w+) )+)SGN)||(ATLAS SGN)) /gi,
+    atlasSignatureEdition: / ((SGN ATLAS ED)|(ATLAS ED)|(ATLAS (((\w+) )+)ED)|(ATLAS (((\w+) )+)SGN)|(ATLAS SGN)) /gi,
     blackAndWhite: / B&W /i,
     blankCover: / BLANK (CVR|COVER) /i,
     bprd: / BPRD /gi,

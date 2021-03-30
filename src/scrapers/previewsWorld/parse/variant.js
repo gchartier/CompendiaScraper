@@ -1,10 +1,11 @@
-const patterns = require("../patterns.js")
-const logger = require("../../../utils/logger.js")
 const {
     getTitleAsPaddedArray,
     getStringFromPaddedArray,
     removeSegmentFromTitle,
 } = require("./util.js")
+const patterns = require("../patterns.js")
+const logger = require("../../../utils/logger.js")
+const convertToProperCasing = require("../../../utils/convertToProperCasing.js")
 
 function isLastWord(index, words) {
     return index === words.length - 1
@@ -171,7 +172,7 @@ function getCleanedVariantDescription(descriptions) {
         itemsToClean.forEach(
             (item) => (newDescription = newDescription.replace(item.pattern, item.replacement))
         )
-        newDescription = toProperCasing(newDescription)
+        newDescription = convertToProperCasing(newDescription)
         newDescription = newDescription.trim()
         if (newDescription !== "") cleanedDescriptions.push(newDescription)
     })
