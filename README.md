@@ -43,6 +43,7 @@ The scraper works better than I could have hoped for despite many struggles I ra
 
 I will continue to maintain this as it is a crucial part of [Compendia](https://github.com/gchartier/Compendia).
 ### Plans for future developments:
+-   Add a new scraper for DC Comics because DC is not distributed by Diamond
 -   Host on AWS to be run every week at the same time so that it does not need to be manually run.
 -   Test thoroughly
 -   Automate error reporting to email or mobile push notifications so that I am aware of any parsing errors that need to be corrected
