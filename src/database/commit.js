@@ -18,7 +18,12 @@ module.exports = (async () => {
             logger.info(`# Started committing release ${index + 1} of ${comics.length}`)
             try {
                 comic.publisher.id = await commitPublisher(client, comic.publisher.name)
-                comic.series.id = await commitSeries(client, comic.series.name, comic.publisher.id)
+                comic.series.id = await commitSeries(
+                    client,
+                    comic.series.name,
+                    comic.publisher.id,
+                    comic.format === "Graphic Novel" || comic.format === "Graphic Novel Hardcover"
+                )
                 comic.creators =
                     comic.creators && comic.creators.length > 0
                         ? await commitCreators(client, comic.creators)

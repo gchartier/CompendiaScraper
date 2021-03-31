@@ -79,12 +79,12 @@ function getFormatFromTitle(title) {
     let format = ""
 
     if (title.match(patterns.graphicNovelHardcover)) format = "Graphic Novel Hardcover"
-    else if (title.match(patterns.graphicNovel)) format = "Graphic Novel"
+    else if (title.match(patterns.graphicNovel) || title.match(patterns.softcover))
+        format = "Graphic Novel"
     else if (title.match(patterns.omnibusHardcover)) format = "Omnibus Hardcover"
     else if (title.match(patterns.omnibus)) format = "Omnibus"
     else if (title.match(patterns.tradePaperback)) format = "Trade Paperback"
     else if (title.match(patterns.hardcover)) format = "Hardcover"
-    else if (title.match(patterns.softcover)) format = "Softcover"
     else format = "Comic"
 
     return format
