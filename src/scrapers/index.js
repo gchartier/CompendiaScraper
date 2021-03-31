@@ -13,6 +13,8 @@ module.exports = (async () => {
         logger.error(`! ${error.message}`)
     }
     finally {
-        process.exit()
+        logger.on('finish', (info) => {
+            process.exit()
+        })
     }
 })()

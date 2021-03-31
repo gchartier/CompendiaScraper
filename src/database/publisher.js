@@ -17,7 +17,7 @@ async function insertNewPublisherAndGetID(client, publisherName) {
 }
 
 async function commitPublisher(client, publisherName) {
-    if (!publisherName) throw new Error("Publisher name was not valid")
+    if (!publisherName) throw new Error("! Publisher name was not valid")
     const publisherID = await getExistingPublisherIDByName(client, publisherName)
     return publisherID ? publisherID : await insertNewPublisherAndGetID(client, publisherName)
 }

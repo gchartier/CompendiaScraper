@@ -7,7 +7,7 @@ const getParsedComic = require("./parse/comic.js")
 const convertToProperCasing = require("../../utils/convertToProperCasing")
 
 async function getScrapedReleaseLinksAndFormats() {
-    const newReleasesURL = "https://www.previewsworld.com/NewReleases?releaseDate=03/24/2021"
+    const newReleasesURL = "https://www.previewsworld.com/NewReleases"
     const { data: newReleasesResponse } = await axios.get(newReleasesURL)
     const newReleaseLinks = $(
         '.nrGalleryItem[dmd-cat="1"] .nrGalleryItemDmdNo a, .nrGalleryItem[dmd-cat="3"] .nrGalleryItemDmdNo a',
@@ -29,7 +29,6 @@ async function getScrapedReleaseLinksAndFormats() {
 }
 
 async function getScrapedSeriesName(seriesLink) {
-    logger.info(`# Requesting series from ${seriesLink}`)
     await sleep(SLEEP_SECONDS)
     const { data: seriesNameHTML } = await axios.get(seriesLink)
     if (!seriesNameHTML)
@@ -42,8 +41,6 @@ async function getScrapedSeriesName(seriesLink) {
 async function getScrapedRelease(releaseLink, releaseFormat) {
     const baseURL = "https://www.previewsworld.com"
     const url = `${baseURL}${releaseLink}`
-
-    logger.info(`# Requesting release from ${url}`)
     await sleep(SLEEP_SECONDS)
     const { data: newReleaseResponse } = await axios.get(url)
     const title = $(".Title", newReleaseResponse).text()
@@ -112,40 +109,52 @@ function filterOutReleasesWithFlaggedPublishers(releases) {
     )
 
     logger.info(
-        `Filtered out ${
+        `### Filtered out ${
             releases.length - filteredReleases.length
-        } releases with flagged publishers.`
+        } releases with flagged publishers.\n`
     )
 
     return filteredReleases
 }
 
 async function getScrapedPreviewsWorldReleases() {
-    logger.info(`# Started retrieving Previews World new releases`)
+    logger.info(`### Started Previews World scraper\n`)
 
     const scrapedLinksAndFormats = await getScrapedReleaseLinksAndFormats()
     const scrapedReleases = []
-    for (const { link, format } of scrapedLinksAndFormats)
+
+    logger.info(`### Started scraping releases\n`)
+    for (const [index, { link, format }] of scrapedLinksAndFormats.entries()) {
+        logger.info(`# Started scraping release ${index + 1} of ${scrapedLinksAndFormats.length}`)
         scrapedReleases.push(await getScrapedRelease(link, format))
+        logger.info(
+            `# Finished scraping release ${index + 1} of ${scrapedLinksAndFormats.length}\n`
+        )
+    }
+    logger.info(`### Finished scraping releases\n`)
 
     const filteredScrapedReleases = filterOutReleasesWithFlaggedPublishers(scrapedReleases)
     const releases = []
+    logger.info(`### Started parsing releases\n`)
     filteredScrapedReleases.forEach((release, index) => {
         try {
-            logger.info(`# Release ${index + 1} of ${filteredScrapedReleases.length}`)
+            logger.info(`# Parsing release ${index + 1} of ${filteredScrapedReleases.length}`)
             const parsedRelease = getParsedComic(release)
             parsedRelease._releaseNumber = index + 1
             if (parsedRelease.filterOut) logger.info("# Filtered out this release.")
             else releases.push(parsedRelease)
-            logger.info(`# Finished release ${index + 1} of ${filteredScrapedReleases.length} \n`)
+            logger.info(
+                `# Finished parsing release ${index + 1} of ${filteredScrapedReleases.length} \n`
+            )
         } catch (error) {
             logger.error(
-                `! Error occurred while parsing comic from ${release.link}: ${error.message}`
+                `! Error occurred while parsing comic from ${release.link}: ${error.message}\n`
             )
         }
     })
+    logger.info(`### Finished parsing releases\n`)
 
-    logger.info(`# Finished retrieving Previews World new releases`)
+    logger.info(`### Finished Previews World scraper\n`)
     return releases
 }
 

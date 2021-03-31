@@ -61,7 +61,7 @@ async function parseCover(coverURL, comicID) {
         await downloadCover(coverURL)
         const isPlaceholderCover = await getIsPlaceholderCover()
         const coverS3URL = await uploadCover(comicID, isPlaceholderCover)
-        if (!coverS3URL) throw new Error("Expected to receive URL back from S3 but did not")
+        if (!coverS3URL) throw new Error("! Expected to receive URL back from S3 but did not")
         return coverS3URL
     } catch (error) {
         logger.error(

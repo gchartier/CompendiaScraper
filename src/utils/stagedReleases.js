@@ -8,7 +8,7 @@ function writeReleasesToStagingFile(releases) {
 
 function readReleasesFromStagingFile() {
     const date = format(new Date(), "yyyy-MM-dd")
-    const releases = JSON.parse(fs.readFileSync(`log/${date}-releases.json`))
+    const releases = JSON.parse(fs.readFileSync(`log/${date}-StagedReleases.json`))
     return releases
 }
 

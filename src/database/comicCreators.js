@@ -5,7 +5,7 @@ async function insertNewComicCreator(client, creator, comicID) {
     const params = [creator.id, comicID, creator.types]
     const result = await client.query(insert, params)
     if (result.rows.length < 1) throw new Error("! Comic creator was not inserted into DB")
-    logger.info(`# Inserted new comic creator to database with name ${creatorName}`)
+    logger.info(`# Inserted new comic creator to database with name ${creator.name}`)
     return result.rows[0].creator_id
 }
 

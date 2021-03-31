@@ -444,9 +444,10 @@ function getCleanedSeriesName(name, comic) {
     parsedName = removeSegmentFromTitle(parsedName, comic.unparsedVariantDescription)
     parsedName = removeSegmentFromTitle(parsedName, comic.unparsedCoverDescription)
     parsedName = removeSegmentFromTitle(parsedName, comic.unparsedCoverLetterDescription)
-    comic.unparsedAdditionalDescriptions.forEach((description) => {
-        parsedName = removeSegmentFromTitle(parsedName, description)
-    })
+    if (comic.unparsedAdditionalDescriptions)
+        comic.unparsedAdditionalDescriptions.forEach((description) => {
+            parsedName = removeSegmentFromTitle(parsedName, description)
+        })
     parsedName = removeSegmentFromTitle(parsedName, comic.titleOverflow)
     parsedName = removeUnneededWordsFromTitle(parsedName)
     parsedName = removeSegmentFromTitle(parsedName, comic.unparsedSubtitle)
@@ -459,11 +460,8 @@ function getParsedSeries(series, comic) {
     const parsedSeries = {
         id: null,
         link: series && series.link ? series.link : null,
+        name: series && series.name ? getCleanedSeriesName(series.name, comic) : comic.title,
     }
-    parsedSeries.name =
-        parsedSeries.link && parsedSeries.name
-            ? getCleanedSeriesName(parsedSeries.name, comic)
-            : comic.title
     return parsedSeries
 }
 
@@ -509,7 +507,7 @@ function getParsedComic(comic) {
     parsedComic.itemNumber = getCleanedItemNumber(parsedComic.unparsedItemNumber)
     parsedComic.filterOut = isFilterOut(parsedComic.title)
     parsedComic.title = getCleanedTitle(parsedComic.title)
-    parsedComic.series = getParsedSeries(comic.series, parsedComic.title)
+    parsedComic.series = getParsedSeries(comic.series, parsedComic)
 
     return parsedComic
 }

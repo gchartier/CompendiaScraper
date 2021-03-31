@@ -1,4 +1,5 @@
-const logger = require("../utils/logger")
+const logger = require("../utils/logger.js")
+const parseCover = require("../utils/parseCover.js")
 
 function getExistingVersionOf(comics) {
     const comicMatchesFound = comics.filter((comic) => comic.version_of !== null)
