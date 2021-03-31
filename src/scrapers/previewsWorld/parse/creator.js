@@ -91,27 +91,27 @@ function isLastNode(nodeList, index) {
 }
 
 function getParsedCreatorsFromNodes(nodes) {
+    if (nodes.length === 1 && nodes[0] === "") nodes.pop()
     if (!nodes) logger.warn(`! No comic creator nodes found`)
-    else {
-        const creators = []
-        const scrapedCreator = { name: "", type: "" }
 
-        nodes.forEach((node, index, nodes) => {
-            if (isNameNode(node)) {
-                scrapedCreator.name = scrapedCreator.name.concat(" " + node)
-                if (isCommaInNode(node)) addScrapedCreatorToList(scrapedCreator, creators)
-            } else if (isCreatorTypeNode(node)) {
-                if (scrapedCreator.name) addScrapedCreatorToList(scrapedCreator, creators)
-                scrapedCreator.type = node
-            }
+    const creators = []
+    const scrapedCreator = { name: "", type: "" }
 
-            if (isLastNode(nodes, index)) addScrapedCreatorToList(scrapedCreator, creators)
-        })
+    nodes.forEach((node, index, nodes) => {
+        if (isNameNode(node)) {
+            scrapedCreator.name = scrapedCreator.name.concat(" " + node)
+            if (isCommaInNode(node)) addScrapedCreatorToList(scrapedCreator, creators)
+        } else if (isCreatorTypeNode(node)) {
+            if (scrapedCreator.name) addScrapedCreatorToList(scrapedCreator, creators)
+            scrapedCreator.type = node
+        }
 
-        const parsedCreators = getFilteredUniqueCreators(creators)
+        if (isLastNode(nodes, index)) addScrapedCreatorToList(scrapedCreator, creators)
+    })
 
-        return parsedCreators.length > 0 ? parsedCreators : null
-    }
+    const parsedCreators = getFilteredUniqueCreators(creators)
+
+    return parsedCreators.length > 0 ? parsedCreators : null
 }
 
 module.exports = getParsedCreatorsFromNodes

@@ -2,6 +2,8 @@ const {
     getTitleAsPaddedArray,
     getStringFromPaddedArray,
     removeSegmentFromTitle,
+    prepareTitleForParsing,
+    removeUnneededWordsFromTitle,
 } = require("./util.js")
 const {
     getCoverLetterFromTitle,
@@ -12,19 +14,15 @@ const { format } = require("date-fns")
 const patterns = require("../patterns.js")
 const logger = require("../../../utils/logger.js")
 const getParsedCreatorsFromNodes = require("./creator.js")
-const { parseSubtitleFromTitle } = require("./subtitle.js")
-const convertToProperCasing = require("../../../utils/convertToProperCasing.js")
 const getMonthFromAbbreviation = require("../../../utils/getMonth.js")
+const convertToProperCasing = require("../../../utils/convertToProperCasing.js")
+const { parseSubtitleFromTitle, getAdditionalSubtitle } = require("./subtitle.js")
 
 function getParsedPublisher(publisher) {
     if (!publisher)
         logger.error("! No publisher found from parsed data. Manual addition of publisher needed.")
 
     return { id: null, name: publisher && publisher.name ? publisher.name : null }
-}
-
-function prepareTitleForParsing(title) {
-    return ` ${title.replace(patterns.spacesBeginningAndEnd, "").replace(patterns.spaces, " ")} `
 }
 
 function getSolicitDateFromDiamondID(diamondID) {
@@ -375,32 +373,6 @@ function getCleanedItemNumber(itemNumber) {
     return cleanedItemNum ? cleanedItemNum : null
 }
 
-function removeUnneededWordsFromTitle(title) {
-    const itemsToRemove = [
-        { pattern: patterns.mature, replacement: " " },
-        { pattern: patterns.miniSeries, replacement: " " },
-        { pattern: patterns.net, replacement: " " },
-        { pattern: patterns.oneShot, replacement: " " },
-        { pattern: patterns.operatingAs, replacement: " " },
-        { pattern: patterns.psArtbooksMagazine, replacement: " " },
-        { pattern: patterns.psArtbooks, replacement: " " },
-        { pattern: patterns.r, replacement: " " },
-        { pattern: patterns.reprint, replacement: " " },
-        { pattern: patterns.resolicit, replacement: " " },
-        { pattern: patterns.softee, replacement: " " },
-        { pattern: patterns.subsequentPrintingNum, replacement: " " },
-        { pattern: patterns.trailingParentheses, replacement: " " },
-        { pattern: patterns.useOtherDiamondID, replacement: " " },
-    ]
-
-    let cleanedTitle = title
-    itemsToRemove.forEach(
-        (item) => (cleanedTitle = cleanedTitle.replace(item.pattern, item.replacement))
-    )
-
-    return cleanedTitle
-}
-
 function getCleanedTitle(title) {
     const itemsToClean = [
         { pattern: patterns.adventure, replacement: " Adventure " },
@@ -439,6 +411,10 @@ function getCleanedTitle(title) {
     return cleanedTitle
 }
 
+function isFilterOut(title) {
+    return title.match(patterns.atlasSignatureEdition) !== null
+}
+
 function getCleanedSeriesName(name, comic) {
     let parsedName = prepareTitleForParsing(name)
     parsedName = removeSegmentFromTitle(parsedName, comic.unparsedVariantDescription)
@@ -451,7 +427,11 @@ function getCleanedSeriesName(name, comic) {
     parsedName = removeSegmentFromTitle(parsedName, comic.titleOverflow)
     parsedName = removeUnneededWordsFromTitle(parsedName)
     parsedName = removeSegmentFromTitle(parsedName, comic.unparsedSubtitle)
-    parsedName = removeSegmentFromTitle(parsedName, comic.unparsedItemNumber)
+    parsedName = removeSegmentFromTitle(parsedName, getAdditionalSubtitle(parsedName))
+    parsedName = removeSegmentFromTitle(
+        parsedName,
+        getItemNumberFromTitle(parsedName, comic.format)
+    )
 
     return getCleanedTitle(parsedName)
 }
@@ -463,10 +443,6 @@ function getParsedSeries(series, comic) {
         name: series && series.name ? getCleanedSeriesName(series.name, comic) : comic.title,
     }
     return parsedSeries
-}
-
-function isFilterOut(title) {
-    return title.match(patterns.atlasSignatureEdition) !== null
 }
 
 function getParsedComic(comic) {

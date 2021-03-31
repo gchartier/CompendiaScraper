@@ -1,6 +1,7 @@
 const SLEEP_SECONDS = 4
 const $ = require("cheerio")
 const axios = require("axios")
+const patterns = require("./patterns")
 const sleep = require("../../utils/sleep")
 const logger = require("../../utils/logger.js")
 const getParsedComic = require("./parse/comic.js")
@@ -34,8 +35,14 @@ async function getScrapedSeriesName(seriesLink) {
     if (!seriesNameHTML)
         logger.warn(`! Failed request to ${seriesLink} and could not retrieve series name`)
     logger.info(`# Scraped series from ${seriesLink}`)
-
-    return convertToProperCasing($(".Title", seriesNameHTML).text().slice(8))
+    let seriesName = $(".Title", seriesNameHTML).text()
+    const seriesIndicator = seriesName.match(patterns.seriesIndicator)
+    if (seriesIndicator === null)
+        logger.warn(
+            `! Expected series indicator in scraped series name, there may be an error in series name parsing`
+        )
+    else seriesName = seriesName.replace(seriesIndicator, "")
+    return seriesName
 }
 
 async function getScrapedRelease(releaseLink, releaseFormat) {

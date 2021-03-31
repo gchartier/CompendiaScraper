@@ -27,8 +27,8 @@ function getTitleOverflowFromTitle(title, itemNumber) {
 
 function getAdditionalSubtitle(title) {
     const subtitles = []
-    const monthYearPack = title.match(patterns.monthYearPack)
-    if (monthYearPack !== null) subtitles.push(monthYearPack[0])
+    const progPack = title.match(patterns.progPack)
+    if (progPack !== null) subtitles.push(progPack[0])
 
     const seasonSpecialYear = title.match(patterns.seasonSpecialYear)
     if (seasonSpecialYear !== null) subtitles.push(seasonSpecialYear[0])
@@ -116,4 +116,4 @@ function parseSubtitleFromTitle(comic) {
     return comic.subtitle
 }
 
-module.exports = { parseSubtitleFromTitle }
+module.exports = { parseSubtitleFromTitle, getAdditionalSubtitle }

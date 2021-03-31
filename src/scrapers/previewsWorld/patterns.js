@@ -47,7 +47,6 @@ const patterns = {
     miniSeries: / \(OF \d+\) /i,
     miniSeriesInd: / \(OF /i,
     miniSeriesNumber: / \d+\) /i,
-    monthYearPack: / (JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC) \d{4} \w+ PACK /gi,
     more: / More /i,
     net: / \(NET\) /i,
     number: / #\d+ /i,
@@ -64,6 +63,7 @@ const patterns = {
     printing: / PTG /i,
     printingNum: / \d+[A-Z]+ /i,
     prog: / PROG /i,
+    progPack: / ((JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC) )?(\d{4} PROG PACK|PROG PACK \d{4}) /gi,
     progWithNum: / PROG #?\d+ /i,
     psArtbooks: / PS ARTBOOKS /gi,
     psArtbooksMagazine: / PS ARTBOOKS MAGAZINE /gi,
@@ -74,6 +74,7 @@ const patterns = {
     resolicit: / \(RES\) /i,
     season: / SEASON (((\(?#?\d+\)?) )+)/gi,
     seasonSpecialYear: / (WINTER|FALL|SPRING|SUMMER) SPECIAL \d{4} /gi,
+    seriesIndicator: /SERIES: /gi,
     signature: / SGN /i,
     slipcase: / SLIPCASE /gi,
     slipcaseEdition: / SLIPCASE (ED|EDITION) /gi,
@@ -88,6 +89,7 @@ const patterns = {
     subsequentPrinting: / (PTG|ED)\)? /i,
     subsequentPrintingNum: / \(?\d+[A-Z]+ (PTG|ED)\)? /i,
     theNextGeneration: / TNG /i,
+    titleWithYear: /(((\w+) )+) \(?\d{4}\)?/gi,
     tradePaperback: / TP /i,
     tradePaperbackBookWithNum: / TP BOOK #?\d+ /i,
     tradePaperbackPartWithNum: / TP PART #?\d+ /i,
@@ -100,8 +102,8 @@ const patterns = {
     variantWithType: / \w+ (VAR|VA) /i,
     volume: / VOL /i,
     volumeWithNums: / VOL (((#?\d+) )+)/gi,
-    years: / YRS /i,
     writer: /\(W\)/i,
+    years: / YRS /i,
 }
 
 module.exports = patterns
