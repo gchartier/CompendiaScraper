@@ -79,6 +79,8 @@ function getFormatFromTitle(title) {
     if (title.match(patterns.graphicNovelHardcover)) format = "Graphic Novel Hardcover"
     else if (title.match(patterns.graphicNovel) || title.match(patterns.softcover))
         format = "Graphic Novel"
+    else if (title.match(patterns.compendiumHardcover)) format = "Compendium Hardcover"
+    else if (title.match(patterns.compendium)) format = "Compendium"
     else if (title.match(patterns.omnibusHardcover)) format = "Omnibus Hardcover"
     else if (title.match(patterns.omnibus)) format = "Omnibus"
     else if (title.match(patterns.tradePaperback)) format = "Trade Paperback"
@@ -140,34 +142,6 @@ function getItemNumberFromTitle(title, format) {
                     name: "Standard Issue",
                     isMatchOf: (title) => title.match(patterns.number) !== null,
                     getNumber: (title) => getCleanedItemNumber(title, patterns.number),
-                },
-            ],
-        },
-        {
-            format: "Softcover",
-            numberMatches: [
-                {
-                    name: "Volume",
-                    isMatchOf: (title) => title.match(patterns.softcoverVolumeWithNum) !== null,
-                    getNumber: (title) =>
-                        getCleanedItemNumber(title, patterns.softcoverVolumeWithNum),
-                },
-                {
-                    name: "Book",
-                    isMatchOf: (title) => title.match(patterns.softcoverBookWithNum) !== null,
-                    getNumber: (title) =>
-                        getCleanedItemNumber(title, patterns.softcoverBookWithNum),
-                },
-                {
-                    name: "Part",
-                    isMatchOf: (title) => title.match(patterns.softcoverPartWithNum) !== null,
-                    getNumber: (title) =>
-                        getCleanedItemNumber(title, patterns.softcoverPartWithNum),
-                },
-                {
-                    name: "SC",
-                    isMatchOf: (title) => title.match(patterns.softcoverWithNum) !== null,
-                    getNumber: (title) => getCleanedItemNumber(title, patterns.softcoverWithNum),
                 },
             ],
         },
@@ -280,6 +254,29 @@ function getItemNumberFromTitle(title, format) {
                     getNumber: (title) =>
                         getCleanedItemNumber(title, patterns.graphicNovelVolumeWithNum),
                 },
+                {
+                    name: "Softcover Volume",
+                    isMatchOf: (title) => title.match(patterns.softcoverVolumeWithNum) !== null,
+                    getNumber: (title) =>
+                        getCleanedItemNumber(title, patterns.softcoverVolumeWithNum),
+                },
+                {
+                    name: "Softcover Book",
+                    isMatchOf: (title) => title.match(patterns.softcoverBookWithNum) !== null,
+                    getNumber: (title) =>
+                        getCleanedItemNumber(title, patterns.softcoverBookWithNum),
+                },
+                {
+                    name: "Softcover Part",
+                    isMatchOf: (title) => title.match(patterns.softcoverPartWithNum) !== null,
+                    getNumber: (title) =>
+                        getCleanedItemNumber(title, patterns.softcoverPartWithNum),
+                },
+                {
+                    name: "Softcover",
+                    isMatchOf: (title) => title.match(patterns.softcoverWithNum) !== null,
+                    getNumber: (title) => getCleanedItemNumber(title, patterns.softcoverWithNum),
+                },
             ],
         },
         {
@@ -315,6 +312,27 @@ function getItemNumberFromTitle(title, format) {
             format: "Omnibus",
             numberMatches: [
                 {
+                    name: "Graphic Novel Book",
+                    isMatchOf: (title) =>
+                        title.match(patterns.omnibusGraphicNovelBookWithNum) !== null,
+                    getNumber: (title) =>
+                        getCleanedItemNumber(title, patterns.omnibusGraphicNovelBookWithNum),
+                },
+                {
+                    name: "Trade Paperback Volume",
+                    isMatchOf: (title) =>
+                        title.match(patterns.omnibusTradePaperbackVolumeWithNum) !== null,
+                    getNumber: (title) =>
+                        getCleanedItemNumber(title, patterns.omnibusTradePaperbackVolumeWithNum),
+                },
+                {
+                    name: "Trade Paperback",
+                    isMatchOf: (title) =>
+                        title.match(patterns.omnibusTradePaperbackWithNum) !== null,
+                    getNumber: (title) =>
+                        getCleanedItemNumber(title, patterns.omnibusTradePaperbackWithNum),
+                },
+                {
                     name: "Volume",
                     isMatchOf: (title) => title.match(patterns.omnibusVolumeWithNum) !== null,
                     getNumber: (title) =>
@@ -331,6 +349,62 @@ function getItemNumberFromTitle(title, format) {
                         title.match(patterns.omnibusHardcoverVolumeWithNum) !== null,
                     getNumber: (title) =>
                         getCleanedItemNumber(title, patterns.omnibusHardcoverVolumeWithNum),
+                },
+                {
+                    name: "Hardcover",
+                    isMatchOf: (title) => title.match(patterns.omnibusHardcoverWithNum) !== null,
+                    getNumber: (title) =>
+                        getCleanedItemNumber(title, patterns.omnibusHardcoverWithNum),
+                },
+            ],
+        },
+        {
+            format: "Compendium",
+            numberMatches: [
+                {
+                    name: "Graphic Novel Book",
+                    isMatchOf: (title) =>
+                        title.match(patterns.compendiumGraphicNovelBookWithNum) !== null,
+                    getNumber: (title) =>
+                        getCleanedItemNumber(title, patterns.compendiumGraphicNovelBookWithNum),
+                },
+                {
+                    name: "Trade Paperback Volume",
+                    isMatchOf: (title) =>
+                        title.match(patterns.compendiumTradePaperbackVolumeWithNum) !== null,
+                    getNumber: (title) =>
+                        getCleanedItemNumber(title, patterns.compendiumTradePaperbackVolumeWithNum),
+                },
+                {
+                    name: "Trade Paperback",
+                    isMatchOf: (title) =>
+                        title.match(patterns.compendiumTradePaperbackWithNum) !== null,
+                    getNumber: (title) =>
+                        getCleanedItemNumber(title, patterns.compendiumTradePaperbackWithNum),
+                },
+                {
+                    name: "Volume",
+                    isMatchOf: (title) => title.match(patterns.compendiumVolumeWithNum) !== null,
+                    getNumber: (title) =>
+                        getCleanedItemNumber(title, patterns.compendiumVolumeWithNum),
+                },
+            ],
+        },
+        {
+            format: "Compendium Hardcover",
+            numberMatches: [
+                {
+                    name: "Volume",
+                    isMatchOf: (title) =>
+                        title.match(patterns.compendiumHardcoverVolumeWithNum) !== null,
+                    getNumber: (title) =>
+                        getCleanedItemNumber(title, patterns.omnibusVolumeWithNum),
+                },
+                {
+                    name: "Hardcover",
+                    isMatchOf: (title) => title.match(patterns.compendiumHardcoverWithNum) !== null,
+                    getNumber: (title) =>
+                        getCleanedItemNumber(title, patterns.omnibusVolumeWithNum),
                 },
             ],
         },

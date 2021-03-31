@@ -1,10 +1,14 @@
 const logger = require("../utils/logger")
 
-async function getExistingSeriesIDByName(client, seriesName) {
-    const query = `SELECT series_id FROM series WHERE name = $1`
+async function getExistingSeriesIDByName(client, seriesName, isGraphicNovelSeries) {
+    const query = `SELECT series_id, is_graphic_novel_series FROM series WHERE name = $1`
     const params = [seriesName]
     const result = await client.query(query, params)
-    return result.rows && result.rows.length === 1 ? result.rows[0].series_id : null
+    if (result.rows.length > 1)
+        throw new Error(`! More than one series was found with name ${seriesName}`)
+    if (result.rows.length === 1 && result.rows[0].is_graphic_novel_series !== isGraphicNovelSeries)
+        throw new Error(`! Graphic novel series mismatch, this needs to be manually reviewed`)
+    return result.rows.length === 1 ? result.rows[0].series_id : null
 }
 
 async function insertNewSeriesAndGetID(client, seriesName, publisherID, isGraphicNovelSeries) {
