@@ -23,7 +23,7 @@ async function insertNewSeriesAndGetID(client, seriesName, publisherID, isGraphi
 async function commitSeries(client, seriesName, publisherID, isGraphicNovelSeries) {
     if (!seriesName) throw new Error(`! Series name "${seriesName}" was not valid`)
     if (!publisherID) throw new Error(`! Publisher ID "${publisherID}" was not valid`)
-    const seriesID = await getExistingSeriesIDByName(client, seriesName)
+    const seriesID = await getExistingSeriesIDByName(client, seriesName, isGraphicNovelSeries)
     return seriesID
         ? seriesID
         : await insertNewSeriesAndGetID(client, seriesName, publisherID, isGraphicNovelSeries)

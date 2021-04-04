@@ -223,7 +223,6 @@ function parseVariantDescriptionFromTitle(comic) {
     })
 
     const variantDescription = getCleanedVariantDescription([
-        comic.unparsedCoverLetterDescription,
         comic.unparsedVariantDescription,
         comic.unparsedCoverDescription,
         ...comic.unparsedAdditionalDescriptions,
