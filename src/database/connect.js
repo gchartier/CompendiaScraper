@@ -9,18 +9,18 @@ const globalSymbols = Object.getOwnPropertySymbols(global)
 const hasDb = globalSymbols.includes(DB_KEY)
 
 if (!hasDb) {
-    global[DB_KEY] = new Pool({
-        connectionString,
-        ssl: isProduction,
-    })
+  global[DB_KEY] = new Pool({
+    connectionString,
+    ssl: isProduction
+  })
 }
 
 // Create and freeze the singleton object so that it has an instance property.
 const singleton = {}
 Object.defineProperty(singleton, "instance", {
-    get: function () {
-        return global[DB_KEY]
-    },
+  get: function () {
+    return global[DB_KEY]
+  }
 })
 Object.freeze(singleton)
 
