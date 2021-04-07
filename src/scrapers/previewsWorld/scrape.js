@@ -4,8 +4,8 @@ const axios = require("axios")
 const patterns = require("./patterns")
 const sleep = require("../../utils/sleep")
 const logger = require("../../utils/logger.js")
-const getParsedComic = require("./parse/comic.js")
-const convertToProperCasing = require("../../utils/convertToProperCasing")
+const { getParsedComic } = require("./parse/comic.js")
+const { convertToTitleCasing } = require("../../utils/convertToTitleCasing")
 
 async function getScrapedReleaseLinksAndFormats() {
   const newReleasesURL = "https://www.previewsworld.com/NewReleases"
@@ -71,7 +71,7 @@ async function getScrapedRelease(releaseLink, releaseFormat) {
       link: seriesLink
     },
     publisher: {
-      name: convertToProperCasing($(".Publisher", newReleaseResponse).text())
+      name: convertToTitleCasing($(".Publisher", newReleaseResponse).text())
     },
     releaseDate: $(".ReleaseDate", newReleaseResponse).text().slice(10),
     coverPrice: $(".SRP", newReleaseResponse).text().slice(5),

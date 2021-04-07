@@ -1,7 +1,7 @@
 const patterns = require("../patterns.js")
 const logger = require("../../../utils/logger.js")
 const { removeSegmentFromTitle } = require("./util.js")
-const convertToProperCasing = require("../../../utils/convertToProperCasing.js")
+const { convertToTitleCasing } = require("../../../utils/convertToTitleCasing.js")
 const { getTitleAsPaddedArray, getStringFromPaddedArray } = require("./util.js")
 
 function getTitleOverflowFromTitle(title, itemNumber) {
@@ -101,7 +101,7 @@ function getCleanedSubtitle(subtitle, creators) {
     (word) =>
       (cleanedSubtitle = cleanedSubtitle.replace(word.pattern, word.replacement))
   )
-  cleanedSubtitle = convertToProperCasing(cleanedSubtitle)
+  cleanedSubtitle = convertToTitleCasing(cleanedSubtitle)
 
   return cleanedSubtitle ? cleanedSubtitle.trim() : null
 }
@@ -125,4 +125,10 @@ function parseSubtitleFromTitle(comic) {
   return comic.subtitle
 }
 
-module.exports = { parseSubtitleFromTitle, getAdditionalSubtitle }
+module.exports = {
+  getTitleOverflowFromTitle,
+  getAdditionalSubtitle,
+  getSubtitleFromTitle,
+  getCleanedSubtitle,
+  parseSubtitleFromTitle
+}

@@ -24,6 +24,8 @@ function getMonthFromAbbreviation(abbreviation) {
       return "November"
     case "DEC":
       return "December"
+    default:
+      return ""
   }
 }
 

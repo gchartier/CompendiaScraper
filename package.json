@@ -10,7 +10,7 @@
     "prettier": "prettier --ignore-path .gitignore \"**/*.+(js|json)\"",
     "format": "npm run prettier -- --write",
     "check-format": "npm run prettier -- --list-different",
-    "test-releases": "node src/scrapers/previewsWorld/test/manualTest.js",
+    "test-releases": "node test-releases/test-releases.js",
     "validate": "npm run check-format && npm run lint"
   },
   "keywords": [],
@@ -30,6 +30,8 @@
   "devDependencies": {
     "eslint": "^7.23.0",
     "eslint-config-prettier": "^8.1.0",
+    "jest": "^26.6.3",
+    "jest-in-case": "^1.0.2",
     "nodemon": "^1.19.0",
     "prettier": "^2.2.1"
   }

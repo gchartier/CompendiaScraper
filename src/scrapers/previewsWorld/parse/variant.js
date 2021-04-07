@@ -5,7 +5,7 @@ const {
 } = require("./util.js")
 const patterns = require("../patterns.js")
 const logger = require("../../../utils/logger.js")
-const convertToProperCasing = require("../../../utils/convertToProperCasing.js")
+const { convertToTitleCasing } = require("../../../utils/convertToTitleCasing.js")
 
 function isLastWord(index, words) {
   return index === words.length - 1
@@ -181,7 +181,7 @@ function getCleanedVariantDescription(descriptions) {
       (item) =>
         (newDescription = newDescription.replace(item.pattern, item.replacement))
     )
-    newDescription = convertToProperCasing(newDescription)
+    newDescription = convertToTitleCasing(newDescription)
     newDescription = newDescription.trim()
     if (newDescription !== "") cleanedDescriptions.push(newDescription)
   })
@@ -249,6 +249,21 @@ function parseVariantDescriptionFromTitle(comic) {
 }
 
 module.exports = {
+  isLastWord,
+  isCoverLetter,
+  isSubsequentPrinting,
+  isReprint,
+  isFormatNumber,
+  isFormat,
+  isMiniSeries,
+  isMature,
+  isEndOfTitleSegment,
+  getVariantSegmentFromTitle,
+  getVariantDescriptionFromTitle,
+  getCoverDescriptionFromTitle,
+  getCoverLetterDescriptionFromTitle,
+  getAdditionalDescriptionsFromTitle,
+  getCleanedVariantDescription,
   getCoverLetterFromTitle,
   getVariantTypesFromTitle,
   parseVariantDescriptionFromTitle

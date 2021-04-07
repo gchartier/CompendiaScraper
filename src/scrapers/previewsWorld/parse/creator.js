@@ -1,39 +1,39 @@
 const patterns = require("../patterns.js")
 const logger = require("../../../utils/logger.js")
 
-function getCreatorTypesFromScrapedCreator(scrapedCreator, existingTypes) {
-  const creatorTypes = [
-    {
-      name: "Writer",
-      matches: (node) => node.match(patterns.writer),
-      values: ["W"]
-    },
-    {
-      name: "Artist",
-      matches: (node) => node.match(patterns.artist),
-      values: ["A"]
-    },
-    {
-      name: "Cover Artist",
-      matches: (node) => node.match(patterns.coverArtist),
-      values: ["CA"]
-    },
-    {
-      name: "Artist / Cover Artist",
-      matches: (node) => node.match(patterns.artistAndCoverArtist),
-      values: ["A", "CA"]
-    }
-  ]
+const creatorTypes = [
+  {
+    name: "Writer",
+    matches: (node) => node.match(patterns.writer),
+    values: ["W"]
+  },
+  {
+    name: "Artist",
+    matches: (node) => node.match(patterns.artist),
+    values: ["A"]
+  },
+  {
+    name: "Cover Artist",
+    matches: (node) => node.match(patterns.coverArtist),
+    values: ["CA"]
+  },
+  {
+    name: "Artist / Cover Artist",
+    matches: (node) => node.match(patterns.artistAndCoverArtist),
+    values: ["A", "CA"]
+  }
+]
 
+function getCreatorTypesFromScrapedCreator(scrapedCreator, currentCreatorTypes) {
   const types = []
   creatorTypes.forEach((type) => {
     if (type.matches(scrapedCreator.type))
       type.values.forEach((value) => {
-        if (!existingTypes.includes(value)) types.push(value)
+        if (!currentCreatorTypes.includes(value)) types.push(value)
       })
   })
 
-  if (types.length < 1) logger.error("! Creator did not have any types")
+  if (types.length < 1) logger.error("! Scraped creator did not have any types")
 
   return types
 }
@@ -122,4 +122,15 @@ function getParsedCreatorsFromNodes(nodes) {
   return parsedCreators.length > 0 ? parsedCreators : null
 }
 
-module.exports = getParsedCreatorsFromNodes
+module.exports = {
+  getCreatorTypesFromScrapedCreator,
+  addScrapedCreatorToList,
+  getIndexOfFirstMatchingCreator,
+  creatorNameIsValid,
+  getFilteredUniqueCreators,
+  isCommaInNode,
+  isCreatorTypeNode,
+  isNameNode,
+  isLastNode,
+  getParsedCreatorsFromNodes
+}

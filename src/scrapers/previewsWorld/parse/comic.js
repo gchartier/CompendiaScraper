@@ -13,9 +13,9 @@ const {
 const { format } = require("date-fns")
 const patterns = require("../patterns.js")
 const logger = require("../../../utils/logger.js")
-const getParsedCreatorsFromNodes = require("./creator.js")
+const { getParsedCreatorsFromNodes } = require("./creator.js")
 const getMonthFromAbbreviation = require("../../../utils/getMonth.js")
-const convertToProperCasing = require("../../../utils/convertToProperCasing.js")
+const { convertToTitleCasing } = require("../../../utils/convertToTitleCasing.js")
 const { parseSubtitleFromTitle, getAdditionalSubtitle } = require("./subtitle.js")
 
 function getParsedPublisher(publisher) {
@@ -67,6 +67,20 @@ function getIsMiniSeriesFromTitle(title) {
   return title.match(patterns.miniSeries) !== null
 }
 
+function getMiniSeriesLimitFromTitle(title, isMiniSeries) {
+  let miniSeriesLimit = null
+  const miniSeriesMatch = title.match(patterns.miniSeries)
+  if (miniSeriesMatch !== null) {
+    const miniSeriesInfo = miniSeriesMatch[0].toString()
+    miniSeriesLimit = miniSeriesInfo.substring(5, miniSeriesInfo.length - 2)
+
+    if (!miniSeriesLimit || isNaN(miniSeriesLimit))
+      logger.error("! Expected to find mini series limit from title but didn't")
+  }
+
+  return isMiniSeries && miniSeriesLimit ? parseInt(miniSeriesLimit) : null
+}
+
 function getFormattedReleaseDate(dateString) {
   if (!dateString)
     logger.error("! No release date found from parsed data, using today's date.")
@@ -91,20 +105,6 @@ function getFormatFromTitle(title) {
   else format = "Comic"
 
   return format
-}
-
-function getMiniSeriesLimitFromTitle(title, isMiniSeries) {
-  let miniSeriesLimit = null
-  const miniSeriesMatch = title.match(patterns.miniSeries)
-  if (miniSeriesMatch !== null) {
-    const miniSeriesInfo = miniSeriesMatch[0].toString()
-    miniSeriesLimit = miniSeriesInfo.substring(5, miniSeriesInfo.length - 2)
-
-    if (!miniSeriesLimit || isNaN(miniSeriesLimit))
-      logger.error("! Expected to find mini series limit from title but didn't")
-  }
-
-  return isMiniSeries && miniSeriesLimit ? parseInt(miniSeriesLimit) : null
 }
 
 function getIsOneShotFromTitle(title) {
@@ -464,7 +464,7 @@ function getCleanedItemNumber(itemNumber) {
     formatNumbers.forEach(
       (num) => (cleanedItemNum = cleanedItemNum.replace(num, ` #${num.trim()} `))
     )
-  cleanedItemNum = convertToProperCasing(cleanedItemNum).trim()
+  cleanedItemNum = convertToTitleCasing(cleanedItemNum).trim()
   return cleanedItemNum ? cleanedItemNum : null
 }
 
@@ -497,7 +497,7 @@ function getCleanedTitle(title) {
   itemsToClean.forEach(
     (item) => (cleanedTitle = cleanedTitle.replace(item.pattern, item.replacement))
   )
-  cleanedTitle = convertToProperCasing(cleanedTitle.trim())
+  cleanedTitle = convertToTitleCasing(cleanedTitle.trim())
 
   if (cleanedTitle.length < 1) logger.error(`! Title is missing.`)
   if (cleanedTitle.match(/\s{2,}/gi))
@@ -599,4 +599,21 @@ function getParsedComic(comic) {
   return parsedComic
 }
 
-module.exports = getParsedComic
+module.exports = {
+  getParsedPublisher,
+  getSolicitDateFromDiamondID,
+  getPrintingNumberFromTitle,
+  getAgeRatingFromTitle,
+  getIsMiniSeriesFromTitle,
+  getMiniSeriesLimitFromTitle,
+  getFormattedReleaseDate,
+  getFormatFromTitle,
+  getIsOneShotFromTitle,
+  getItemNumberFromTitle,
+  getCleanedItemNumber,
+  getCleanedTitle,
+  isFilterOut,
+  getCleanedSeriesName,
+  getParsedSeries,
+  getParsedComic
+}
