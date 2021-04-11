@@ -6,6 +6,7 @@ const logger = require("../utils/logger.js")
 const commitCreators = require("./creator.js")
 const commitPublisher = require("./publisher.js")
 const commitComicCreators = require("./comicCreators.js")
+const commitPullListComics = require("./pullListComics.js")
 const { readReleasesFromStagingFile } = require("../utils/stagedReleases.js")
 
 module.exports = (async () => {
@@ -31,6 +32,7 @@ module.exports = (async () => {
             : []
         comic.id = await commitComic(client, comic)
         await commitComicCreators(client, comic.creators, comic.id)
+        await commitPullListComics(client, comic)
       } catch (error) {
         logger.error(
           `! Error in commiting release with title ${comic.title} to DB: ${error.message}\n`

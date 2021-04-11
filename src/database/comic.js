@@ -1,6 +1,6 @@
 const logger = require("../utils/logger.js")
 const parseCover = require("../utils/parseCover.js")
-const { setVariantDetails } = require("./variant.js")
+const { getVariantDetails, updateExistingVariants } = require("./variant.js")
 
 async function insertComicAndGetID(client, comic) {
   const insert = `INSERT INTO comics(age_rating, cover_letter, cover_price, description, diamond_id, format, 
@@ -50,10 +50,20 @@ async function updateComicCover(client, comic) {
 }
 
 async function commitComic(client, comic) {
-  await setVariantDetails(client, comic)
+  const {
+    versionOf,
+    isVariantRoot,
+    isTempVariantRoot,
+    existingVariantRootID
+  } = await getVariantDetails(client, comic)
+  comic.versionOf = versionOf
+  comic.isVariantRoot = isVariantRoot
+  comic.isTempVariantRoot = isTempVariantRoot
   comic.id = await insertComicAndGetID(client, comic)
   //comic.cover = await getComicCoverURL(comic)
-  //await updateComicCover(client, comic)
+  await updateComicCover(client, comic)
+  if (comic.isVariantRoot && existingVariantRootID !== null)
+    await updateExistingVariants(client, comic.id, existingVariantRootID)
   return comic.id
 }
 
