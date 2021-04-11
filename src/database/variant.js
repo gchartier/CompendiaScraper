@@ -4,7 +4,7 @@ function isOnlyCoverAVariant(comic) {
   return (
     comic.variantTypes &&
     comic.variantTypes.length === 1 &&
-    comic.variantTypes[0] === "cvr" &&
+    comic.variantTypes[0] === "cvl" &&
     comic.coverLetter === "A"
   )
 }

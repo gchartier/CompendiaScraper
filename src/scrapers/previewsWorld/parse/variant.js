@@ -208,14 +208,16 @@ function getCoverLetterFromTitle(title) {
 
 function getVariantTypesFromTitle(title) {
   const variantTypes = []
+  if (title.match(patterns.coverLetter)) variantTypes.push("cvl")
+  if (title.match(patterns.reprint)) variantTypes.push("rpr")
+  if (title.match(patterns.subsequentPrintingNum)) variantTypes.push("spr")
   if (
-    title.match(patterns.coverLetter) ||
-    title.match(patterns.cover) ||
+    title.match(patterns.coverFollowedByWord) ||
+    title.match(patterns.coverSurroundedByWords) ||
+    title.match(patterns.coverAsEnd) ||
     title.match(patterns.variant)
   )
     variantTypes.push("cvr")
-  if (title.match(patterns.reprint)) variantTypes.push("rpr")
-  if (title.match(patterns.subsequentPrintingNum)) variantTypes.push("spr")
 
   return variantTypes.length > 0 ? variantTypes : null
 }
