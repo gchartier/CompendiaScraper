@@ -91,7 +91,7 @@ async function getScrapedRelease(releaseLink, releaseFormat) {
       .trim()
       .split(" "),
     diamondID: $(".ItemCode", newReleaseResponse).text(),
-    format: releaseFormat === 1 ? "Comic" : ""
+    format: releaseFormat === 1 ? "Single Issue" : ""
   }
 
   return scrapedRelease

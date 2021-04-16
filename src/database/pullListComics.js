@@ -20,7 +20,8 @@ function getVariantFilters(comic) {
 
 function getFormatFilters(comic) {
   const formatFilters = []
-  if (comic.format === "Comic") formatFilters.push("include_single_issues = true")
+  if (comic.format === "Single Issue")
+    formatFilters.push("include_single_issues = true")
   else if (comic.format === "Trade Paperback")
     formatFilters.push("include_tpbs = true")
   else if (comic.format === "Hardcover")

@@ -102,7 +102,7 @@ function getFormatFromTitle(title) {
   else if (title.match(patterns.omnibus)) format = "Omnibus"
   else if (title.match(patterns.tradePaperback)) format = "Trade Paperback"
   else if (title.match(patterns.hardcover)) format = "Hardcover"
-  else format = "Comic"
+  else format = "Single Issue"
 
   return format
 }
@@ -128,7 +128,7 @@ function getItemNumberFromTitle(title, format) {
 
   const numberMatchesByFormat = [
     {
-      format: "Comic",
+      format: "Single Issue",
       numberMatches: [
         {
           name: "Volume Number",
@@ -432,7 +432,7 @@ function getItemNumberFromTitle(title, format) {
 
   function isException(itemNumbers, format) {
     const isSeason =
-      format === "Comic" &&
+      format === "Single Issue" &&
       itemNumbers.find((num) => ` ${num} `.match(patterns.season) !== null)
     return isSeason
   }
@@ -577,9 +577,9 @@ function getParsedComic(comic) {
   )
   parsedComic.isOneShot = getIsOneShotFromTitle(parsedComic.title)
   parsedComic.format =
-    parsedComic.unparsedFormat !== "Comic"
+    parsedComic.unparsedFormat !== "Single Issue"
       ? getFormatFromTitle(parsedComic.title)
-      : "Comic"
+      : "Single Issue"
   parsedComic.unparsedItemNumber = getItemNumberFromTitle(
     parsedComic.title,
     parsedComic.format

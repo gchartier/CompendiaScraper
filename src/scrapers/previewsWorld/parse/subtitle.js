@@ -107,7 +107,7 @@ function getCleanedSubtitle(subtitle, creators) {
 }
 
 function parseSubtitleFromTitle(comic) {
-  if (comic.format === "Comic") {
+  if (comic.format === "Single Issue") {
     comic.titleOverflow = getTitleOverflowFromTitle(
       comic.title,
       comic.unparsedItemNumber
