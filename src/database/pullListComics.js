@@ -53,8 +53,8 @@ function getPullListFilters(comic) {
 async function getCollectionIDs(client, comic) {
   const pullListFilters = getPullListFilters(comic)
   const query = `SELECT collection_id FROM pull_list_series 
-    WHERE series_id = $1 AND $2`
-  const params = [comic.series.id, pullListFilters]
+    WHERE series_id = $1 AND ${pullListFilters}`
+  const params = [comic.series.id]
   const result = await client.query(query, params)
   return result.rows
 }
@@ -64,9 +64,8 @@ function getInsertValues(collectionIDs, comicID) {
 }
 
 async function insertPullListComics(client, insertValues) {
-  const insert = `INSERT INTO pull_list_comics (collection_id, comic_id) VALUES $1 RETURNING pull_list_comic_id`
-  const params = [insertValues]
-  const result = await client.query(insert, params)
+  const insert = `INSERT INTO pull_list_comics (collection_id, comic_id) VALUES ${insertValues} RETURNING pull_list_comic_id`
+  const result = await client.query(insert)
   if (result.rows < 1)
     logger.warn(`! Expected to insert pull list comics but did not`)
 }

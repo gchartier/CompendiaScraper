@@ -60,7 +60,7 @@ async function commitComic(client, comic) {
   comic.isVariantRoot = isVariantRoot
   comic.isTempVariantRoot = isTempVariantRoot
   comic.id = await insertComicAndGetID(client, comic)
-  //comic.cover = await getComicCoverURL(comic)
+  comic.cover = await getComicCoverURL(comic)
   await updateComicCover(client, comic)
   if (comic.isVariantRoot && existingVariantRootID !== null)
     await updateExistingVariants(client, comic.id, existingVariantRootID)
