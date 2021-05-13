@@ -120,7 +120,8 @@ function filterOutReleasesWithFlaggedPublishers(releases) {
     "VERTICAL COMICS",
     "VIZ LLC",
     "YEN ON",
-    "YEN PRESS"
+    "YEN PRESS",
+    "KORERO BOOKS"
   ]
 
   const filteredReleases = releases.filter(
